@@ -1,0 +1,158 @@
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h4 class="mb-0">{{ isEdit() ? 'Edit Product' : 'Create Product' }}</h4>
+    <button mat-stroked-button type="button" routerLink="/app/products">Back to products</button>
+  </div>
+
+  <div class="card-body">
+    @if (loadingProduct()) {
+      <mat-progress-bar mode="indeterminate" />
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="saveProduct()" novalidate>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="name" class="form-label">Product name</label>
+            <input
+              id="name"
+              class="form-control"
+              formControlName="name"
+              [class.is-invalid]="isInvalid('name')"
+            />
+            <div class="invalid-feedback">Product name is required.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="sku" class="form-label">SKU</label>
+            <input id="sku" class="form-control" formControlName="sku" />
+          </div>
+
+          <div class="col-md-6">
+            <label for="brand" class="form-label">Brand</label>
+            <input id="brand" class="form-control" formControlName="brand" />
+          </div>
+
+          <div class="col-md-6">
+            <label for="categories" class="form-label">Categories</label>
+            <input
+              id="categories"
+              class="form-control"
+              formControlName="categories"
+              placeholder="Separate categories with commas"
+            />
+          </div>
+
+          <div class="col-12">
+            <label for="description" class="form-label">Description</label>
+            <textarea
+              id="description"
+              class="form-control"
+              rows="3"
+              formControlName="description"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Variants</h5>
+            <button mat-stroked-button type="button" (click)="addVariant()">
+              <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+              Add variant
+            </button>
+          </div>
+
+          <div formArrayName="variants">
+            @for (variant of variants.controls; track $index; let i = $index) {
+              <div class="border rounded p-3 mb-3" [formGroupName]="i">
+                <div class="row g-3 align-items-start">
+                  <div class="col-md-2">
+                    <label [for]="'variant-sku-' + i" class="form-label">SKU</label>
+                    <input
+                      [id]="'variant-sku-' + i"
+                      class="form-control"
+                      formControlName="sku"
+                      [class.is-invalid]="isVariantInvalid(variant, 'sku')"
+                    />
+                    <div class="invalid-feedback">SKU is required.</div>
+                  </div>
+
+                  <div class="col-md-2">
+                    <label [for]="'variant-barcode-' + i" class="form-label">Barcode</label>
+                    <input
+                      [id]="'variant-barcode-' + i"
+                      class="form-control"
+                      formControlName="barcode"
+                      [class.is-invalid]="isVariantInvalid(variant, 'barcode')"
+                    />
+                    <div class="invalid-feedback">Barcode is required.</div>
+                  </div>
+
+                  <div class="col-md-2">
+                    <label [for]="'variant-weight-' + i" class="form-label">Weight</label>
+                    <input
+                      [id]="'variant-weight-' + i"
+                      type="number"
+                      min="0"
+                      class="form-control"
+                      formControlName="weight"
+                      [class.is-invalid]="isVariantInvalid(variant, 'weight')"
+                    />
+                    <div class="invalid-feedback">Weight must be zero or greater.</div>
+                  </div>
+
+                  <div class="col-md-2">
+                    <label [for]="'variant-unit-' + i" class="form-label">Unit</label>
+                    <input
+                      [id]="'variant-unit-' + i"
+                      class="form-control"
+                      formControlName="unit"
+                      [class.is-invalid]="isVariantInvalid(variant, 'unit')"
+                    />
+                    <div class="invalid-feedback">Unit is required.</div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label [for]="'variant-size-' + i" class="form-label">Size label</label>
+                    <input
+                      [id]="'variant-size-' + i"
+                      class="form-control"
+                      formControlName="sizeLabel"
+                      [class.is-invalid]="isVariantInvalid(variant, 'sizeLabel')"
+                    />
+                    <div class="invalid-feedback">Size label is required.</div>
+                  </div>
+
+                  <div class="col-md-1 d-flex justify-content-end">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [attr.aria-label]="'Remove variant ' + (i + 1)"
+                      title="Remove variant"
+                      (click)="removeVariant(i)"
+                    >
+                      <i class="bi bi-trash" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end">
+          <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+            {{
+              saving()
+                ? isEdit()
+                  ? 'Saving...'
+                  : 'Creating...'
+                : isEdit()
+                  ? 'Save Changes'
+                  : 'Create Product'
+            }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</div>

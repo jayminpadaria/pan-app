@@ -32,6 +32,21 @@ const routes: Routes = [
         path: 'users',
         loadChildren: () => import('./modules/users/users.module').then((m) => m.UsersModule),
       },
+      {
+        path: 'products',
+        loadChildren: () =>
+          import('./modules/products/products.module').then((m) => m.ProductsModule),
+      },
+      {
+        path: 'categories',
+        loadChildren: () =>
+          import('./modules/categories/categories.module').then((m) => m.CategoriesModule),
+      },
+      {
+        path: 'suppliers',
+        loadChildren: () =>
+          import('./modules/suppliers/suppliers.module').then((m) => m.SuppliersModule),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -15,6 +15,9 @@ export class SidebarComponent {
   readonly menu = [
     { label: 'Dashboard', link: '/app/dashboard', icon: 'bi-speedometer2' },
     { label: 'Users', link: '/app/users', icon: 'bi-people' },
+    { label: 'Products', link: '/app/products', icon: 'bi-box-seam' },
+    { label: 'Categories', link: '/app/categories', icon: 'bi-tags' },
+    { label: 'Suppliers', link: '/app/suppliers', icon: 'bi-truck' },
   ];
 
   logout() {
