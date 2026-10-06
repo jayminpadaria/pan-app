@@ -1,0 +1,152 @@
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h4 class="mb-0">{{ isEdit() ? 'Edit User' : 'Create User' }}</h4>
+    <button mat-stroked-button type="button" routerLink="/app/users">Back to users</button>
+  </div>
+
+  <div class="card-body">
+    @if (loadingUser()) {
+      <mat-progress-bar mode="indeterminate" />
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="saveUser()" novalidate>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label for="firstName" class="form-label">First name</label>
+            <input
+              id="firstName"
+              class="form-control"
+              formControlName="firstName"
+              autocomplete="given-name"
+              [class.is-invalid]="isInvalid('firstName')"
+            />
+            <div class="invalid-feedback">First name is required.</div>
+          </div>
+
+          <div class="col-md-4">
+            <label for="middleName" class="form-label">Middle name</label>
+            <input
+              id="middleName"
+              class="form-control"
+              formControlName="middleName"
+              autocomplete="additional-name"
+            />
+          </div>
+
+          <div class="col-md-4">
+            <label for="lastName" class="form-label">Last name</label>
+            <input
+              id="lastName"
+              class="form-control"
+              formControlName="lastName"
+              autocomplete="family-name"
+              [class.is-invalid]="isInvalid('lastName')"
+            />
+            <div class="invalid-feedback">Last name is required.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="primaryEmail" class="form-label">Email</label>
+            <input
+              id="primaryEmail"
+              type="email"
+              class="form-control"
+              formControlName="primaryEmail"
+              autocomplete="email"
+              [class.is-invalid]="isInvalid('primaryEmail')"
+            />
+            <div class="invalid-feedback">Enter a valid email address.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="secondaryEmail" class="form-label">Secondary email</label>
+            <input
+              id="secondaryEmail"
+              type="email"
+              class="form-control"
+              formControlName="secondaryEmail"
+              [class.is-invalid]="isInvalid('secondaryEmail')"
+            />
+            <div class="invalid-feedback">Enter a valid email address.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="primaryPhone" class="form-label">Phone</label>
+            <input
+              id="primaryPhone"
+              type="tel"
+              class="form-control"
+              formControlName="primaryPhone"
+              autocomplete="tel"
+              [class.is-invalid]="isInvalid('primaryPhone')"
+            />
+            <div class="invalid-feedback">Phone is required.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="secondaryPhone" class="form-label">Secondary phone</label>
+            <input
+              id="secondaryPhone"
+              type="tel"
+              class="form-control"
+              formControlName="secondaryPhone"
+            />
+          </div>
+
+          <div class="col-md-6">
+            <label for="password" class="form-label">
+              Password {{ isEdit() ? '(leave blank to keep current)' : '' }}
+            </label>
+            <input
+              id="password"
+              type="password"
+              class="form-control"
+              formControlName="password"
+              autocomplete="new-password"
+              [class.is-invalid]="isInvalid('password')"
+            />
+            <div class="invalid-feedback">
+              @if (form.controls.password.hasError('required')) {
+                Password is required.
+              } @else if (form.controls.password.hasError('minlength')) {
+                Password must be at least 8 characters.
+              } @else {
+                Password must include a lowercase letter, an uppercase letter, a number, and a
+                symbol.
+              }
+            </div>
+            <div class="form-text">
+              Must be at least 8 characters and include lowercase, uppercase, number, and symbol.
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="role" class="form-label">Role</label>
+            <select id="role" class="form-select" formControlName="role">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea id="notes" class="form-control" rows="3" formControlName="notes"></textarea>
+          </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end">
+          <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+            {{
+              saving()
+                ? isEdit()
+                  ? 'Saving...'
+                  : 'Creating...'
+                : isEdit()
+                  ? 'Save Changes'
+                  : 'Create User'
+            }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</div>

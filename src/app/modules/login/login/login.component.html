@@ -1,0 +1,37 @@
+<div class="container min-vh-100 d-flex align-items-center justify-content-center">
+  <div class="card shadow-sm w-100" style="max-width: 400px">
+    <div class="card-body p-4">
+      <h3 class="card-title text-center mb-4">Sign in</h3>
+
+      <form [formGroup]="form" (ngSubmit)="login()" novalidate>
+        <div class="mb-3">
+          <label for="username" class="form-label">Username</label>
+          <input
+            id="username"
+            type="text"
+            class="form-control"
+            formControlName="username"
+            autocomplete="username"
+            [class.is-invalid]="isInvalid('username')"
+          />
+          <div class="invalid-feedback">Username is required.</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input
+            id="password"
+            type="password"
+            class="form-control"
+            formControlName="password"
+            autocomplete="current-password"
+            [class.is-invalid]="isInvalid('password')"
+          />
+          <div class="invalid-feedback">Password is required.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100" [disabled]="loading()">Login</button>
+      </form>
+    </div>
+  </div>
+</div>

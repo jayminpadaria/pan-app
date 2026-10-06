@@ -1,0 +1,163 @@
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0">Users</h4>
+      <small class="text-muted">{{ total() }} total</small>
+    </div>
+    <button mat-flat-button color="primary" type="button" routerLink="/app/users/create">
+      <i class="bi bi-plus-lg me-1"></i> Add User
+    </button>
+  </div>
+
+  <div class="card-body border-bottom overflow-x-auto">
+    <div class="d-flex flex-nowrap align-items-center gap-3">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search flex-grow-1">
+        <mat-label>Search</mat-label>
+        <input matInput [formControl]="search" placeholder="Name, email or phone" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field">
+        <mat-label>Role</mat-label>
+        <mat-select [formControl]="role">
+          <mat-option value="">All</mat-option>
+          @for (r of roles; track r) {
+            <mat-option [value]="r" class="text-capitalize">{{ r }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field">
+        <mat-label>Status</mat-label>
+        <mat-select [formControl]="status">
+          <mat-option value="">All</mat-option>
+          <mat-option value="active">Active</mat-option>
+          <mat-option value="inactive">Inactive</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field">
+        <mat-label>Created from</mat-label>
+        <input matInput type="date" [formControl]="startDate" [max]="endDate.value || null" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field">
+        <mat-label>Created to</mat-label>
+        <input matInput type="date" [formControl]="endDate" [min]="startDate.value || null" />
+      </mat-form-field>
+
+      <button
+        mat-stroked-button
+        type="button"
+        class="flex-shrink-0"
+        [disabled]="!hasFilters"
+        (click)="clearFilters()"
+      >
+        Clear filters
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="table-responsive">
+    <table
+      mat-table
+      matSort
+      [dataSource]="dataSource"
+      [matSortActive]="sortHeader()"
+      [matSortDirection]="sortDirection() === 'ASC' ? 'asc' : 'desc'"
+      (matSortChange)="onSort($event)"
+      class="w-100"
+    >
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header="firstName">Name</th>
+        <td mat-cell *matCellDef="let user" class="fw-semibold">{{ fullName(user) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="primaryEmail">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Email</th>
+        <td mat-cell *matCellDef="let user">{{ user.primaryEmail }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="primaryPhone">
+        <th mat-header-cell *matHeaderCellDef>Phone</th>
+        <td mat-cell *matCellDef="let user">{{ user.primaryPhone }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="role">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Role</th>
+        <td mat-cell *matCellDef="let user">
+          <span class="badge text-bg-primary text-capitalize">{{ user.role }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="isActive">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+        <td mat-cell *matCellDef="let user">
+          <span
+            class="badge rounded-pill"
+            [class.text-bg-success]="user.isActive"
+            [class.text-bg-secondary]="!user.isActive"
+          >
+            {{ user.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="createdAt">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Created</th>
+        <td mat-cell *matCellDef="let user">{{ user.createdAt | date: 'medium' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let user">
+          <div class="d-flex flex-wrap gap-2">
+            <button
+              mat-icon-button
+              type="button"
+              [routerLink]="['/app/users', user._id, 'edit']"
+              [attr.aria-label]="'Edit'"
+              [attr.title]="'Edit'"
+            >
+              <i class="bi bi-pencil" aria-hidden="true"></i>
+            </button>
+            <button
+              mat-icon-button
+              type="button"
+              [routerLink]="['/app/users', user._id, 'change-password']"
+              [attr.aria-label]="'Change password'"
+              [attr.title]="'Change password'"
+            >
+              <i class="bi bi-key" aria-hidden="true"></i>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+      <tr class="mat-row">
+        <td
+          class="mat-cell text-center text-muted p-4"
+          [attr.colspan]="displayedColumns.length"
+          *matNoDataRow
+        >
+          No users found.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <mat-paginator
+    [length]="total()"
+    [pageIndex]="page() - 1"
+    [pageSize]="limit()"
+    [pageSizeOptions]="[5, 10, 25, 50]"
+    (page)="onPage($event)"
+    showFirstLastButtons
+  />
+</div>

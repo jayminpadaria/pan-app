@@ -1,0 +1,41 @@
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+}
+
+
+#wrapper {
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+#sidebar-wrapper {
+    min-height: 100vh;
+    width: 350px;
+    transition: width 0.25s ease;
+}
+
+/* Width modification applied via [ngClass] binding */
+#sidebar-wrapper.collapsed {
+    width: 70px;
+}
+
+#page-content-wrapper {
+    width: 100%;
+}
+
+.list-group-item {
+    border: none;
+    padding: 20px 30px;
+}
+
+/* Ensure background properties don't mask text selections */
+.list-group-item.active {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+}
+
+#sidebar-wrapper.collapsed .list-group-item {
+    text-align: center;
+    padding: 20px 0;
+}
