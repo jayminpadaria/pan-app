@@ -18,6 +18,7 @@ export class SidebarComponent {
     { label: 'Products', link: '/app/products', icon: 'bi-box-seam' },
     { label: 'Categories', link: '/app/categories', icon: 'bi-tags' },
     { label: 'Suppliers', link: '/app/suppliers', icon: 'bi-truck' },
+    { label: 'Customers', link: '/app/customers', icon: 'bi-person-vcard' },
   ];
 
   logout() {

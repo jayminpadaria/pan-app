@@ -1,19 +1,19 @@
 <div class="card shadow-sm border-0">
   <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
     <div>
-      <h4 class="mb-0">Products</h4>
+      <h4 class="mb-0">Customers</h4>
       <small class="text-muted">{{ total() }} total</small>
     </div>
-    <button mat-flat-button color="primary" type="button" routerLink="/app/products/create">
+    <button mat-flat-button color="primary" type="button" routerLink="/app/customers/create">
       <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
-      Add Product
+      Add Customer
     </button>
   </div>
 
   <div class="card-body border-bottom d-flex align-items-center gap-3">
     <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search flex-grow-1">
-      <mat-label>Search products</mat-label>
-      <input matInput [formControl]="search" placeholder="Name, SKU, brand or category" />
+      <mat-label>Search customers</mat-label>
+      <input matInput [formControl]="search" placeholder="Name, email or phone" />
     </mat-form-field>
     <button
       mat-stroked-button
@@ -40,35 +40,48 @@
       (matSortChange)="onSort($event)"
       class="w-100"
     >
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
-        <td mat-cell *matCellDef="let product" class="fw-semibold">{{ product.name }}</td>
+      <ng-container matColumnDef="firstName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>First name</th>
+        <td mat-cell *matCellDef="let customer" class="fw-semibold">{{ customer.firstName }}</td>
       </ng-container>
 
-      <ng-container matColumnDef="sku">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>SKU</th>
-        <td mat-cell *matCellDef="let product">{{ product.sku || '—' }}</td>
+      <ng-container matColumnDef="lastName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Last name</th>
+        <td mat-cell *matCellDef="let customer">{{ customer.lastName }}</td>
       </ng-container>
 
-      <ng-container matColumnDef="brand">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Brand</th>
-        <td mat-cell *matCellDef="let product">{{ product.brand || '—' }}</td>
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Email</th>
+        <td mat-cell *matCellDef="let customer">{{ customer.email }}</td>
       </ng-container>
 
-      <ng-container matColumnDef="categories">
-        <th mat-header-cell *matHeaderCellDef>Categories</th>
-        <td mat-cell *matCellDef="let product">{{ categories(product) }}</td>
+      <ng-container matColumnDef="phone">
+        <th mat-header-cell *matHeaderCellDef>Phone</th>
+        <td mat-cell *matCellDef="let customer">{{ customer.phone }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let customer">
+          <span
+            class="badge"
+            [class.text-bg-success]="customer.isActive !== false"
+            [class.text-bg-secondary]="customer.isActive === false"
+          >
+            {{ customer.isActive === false ? 'Inactive' : 'Active' }}
+          </span>
+        </td>
       </ng-container>
 
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef>Actions</th>
-        <td mat-cell *matCellDef="let product">
+        <td mat-cell *matCellDef="let customer">
           <button
             mat-icon-button
             type="button"
-            [routerLink]="['/app/products', product._id, 'edit']"
-            [attr.aria-label]="'Edit ' + product.name"
-            [attr.title]="'Edit ' + product.name"
+            [routerLink]="['/app/customers', customer._id, 'edit']"
+            [attr.aria-label]="'Edit ' + customer.firstName + ' ' + customer.lastName"
+            [attr.title]="'Edit ' + customer.firstName + ' ' + customer.lastName"
           >
             <i class="bi bi-pencil" aria-hidden="true"></i>
           </button>
@@ -84,7 +97,7 @@
           [attr.colspan]="displayedColumns.length"
           *matNoDataRow
         >
-          No products found.
+          No customers found.
         </td>
       </tr>
     </table>

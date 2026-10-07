@@ -11,15 +11,15 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { RouterModule } from '@angular/router';
 import { debounceTime } from 'rxjs';
+import { Customer } from '../../../../shared/interfaces/customer.interface';
 import { ListFilter } from '../../../../shared/interfaces/list.interface';
-import { Product } from '../../../../shared/interfaces/product.interface';
+import { CustomersService } from '../../../../shared/services/customers.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
-import { ProductsService } from '../../../../shared/services/products.service';
 
-const DEFAULT_SORT = { header: 'name', direction: 'ASC' };
+const DEFAULT_SORT = { header: 'firstName', direction: 'ASC' };
 
 @Component({
-  selector: 'app-product-list',
+  selector: 'app-customer-list',
   standalone: true,
   imports: [
     CommonModule,
@@ -33,16 +33,16 @@ const DEFAULT_SORT = { header: 'name', direction: 'ASC' };
     MatSortModule,
     MatTableModule,
   ],
-  templateUrl: './product-list.component.html',
-  styleUrl: './product-list.component.scss',
+  templateUrl: './customer-list.component.html',
+  styleUrl: './customer-list.component.scss',
 })
-export class ProductListComponent implements OnInit {
-  private readonly productsService = inject(ProductsService);
+export class CustomerListComponent implements OnInit {
+  private readonly customersService = inject(CustomersService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly displayedColumns = ['name', 'sku', 'brand', 'categories', 'actions'];
-  readonly dataSource = new MatTableDataSource<Product>([]);
+  readonly displayedColumns = ['firstName', 'lastName', 'email', 'phone', 'status', 'actions'];
+  readonly dataSource = new MatTableDataSource<Customer>([]);
   readonly search = new FormControl('', { nonNullable: true });
   readonly total = signal(0);
   readonly page = signal(1);
@@ -82,13 +82,9 @@ export class ProductListComponent implements OnInit {
     this.load();
   }
 
-  categories(product: Product) {
-    return product.categoriesName?.join(', ') || '—';
-  }
-
   load() {
     this.loading.set(true);
-    this.productsService
+    this.customersService
       .getAll({
         filterList: this.buildFilterList(),
         sortHeader: this.sortHeader(),
@@ -104,7 +100,7 @@ export class ProductListComponent implements OnInit {
           this.loading.set(false);
         },
         error: () => {
-          this.notification.error('Failed to load products.');
+          this.notification.error('Failed to load customers.');
           this.loading.set(false);
         },
       });
@@ -113,7 +109,7 @@ export class ProductListComponent implements OnInit {
   private buildFilterList(): ListFilter[] {
     return [
       {
-        columnName: ['name', 'sku', 'brand', 'description', 'categories'],
+        columnName: ['firstName', 'lastName', 'email', 'phone'],
         type: 'search',
         value: this.search.value.trim(),
       },

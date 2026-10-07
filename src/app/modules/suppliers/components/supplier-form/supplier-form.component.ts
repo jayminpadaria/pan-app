@@ -26,7 +26,6 @@ export class SupplierFormComponent implements OnInit {
     contactName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     phone: ['', Validators.required],
-    isActive: [true],
   });
 
   ngOnInit() {
@@ -72,7 +71,6 @@ export class SupplierFormComponent implements OnInit {
       contactName: value.contactName.trim(),
       email: value.email.trim(),
       phone: value.phone.trim(),
-      isActive: value.isActive,
     };
     const request =
       this.isEdit() && this.supplierId
@@ -102,7 +100,6 @@ export class SupplierFormComponent implements OnInit {
       contactName: supplier.contactName,
       email: supplier.email,
       phone: supplier.phone,
-      isActive: supplier.isActive !== false,
     });
   }
 }

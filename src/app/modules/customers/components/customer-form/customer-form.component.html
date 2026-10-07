@@ -1,35 +1,35 @@
 <div class="card shadow-sm border-0">
   <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-    <h4 class="mb-0">{{ isEdit() ? 'Edit Supplier' : 'Create Supplier' }}</h4>
-    <button mat-stroked-button type="button" routerLink="/app/suppliers">Back to suppliers</button>
+    <h4 class="mb-0">{{ isEdit() ? 'Edit Customer' : 'Create Customer' }}</h4>
+    <button mat-stroked-button type="button" routerLink="/app/customers">Back to customers</button>
   </div>
 
   <div class="card-body">
-    @if (loadingSupplier()) {
+    @if (loadingCustomer()) {
       <mat-progress-bar mode="indeterminate" />
     } @else {
-      <form [formGroup]="form" (ngSubmit)="saveSupplier()" novalidate>
+      <form [formGroup]="form" (ngSubmit)="saveCustomer()" novalidate>
         <div class="row g-3">
           <div class="col-md-6">
-            <label for="companyName" class="form-label">Company name</label>
+            <label for="firstName" class="form-label">First name</label>
             <input
-              id="companyName"
+              id="firstName"
               class="form-control"
-              formControlName="companyName"
-              [class.is-invalid]="isInvalid('companyName')"
+              formControlName="firstName"
+              [class.is-invalid]="isInvalid('firstName')"
             />
-            <div class="invalid-feedback">Company name is required.</div>
+            <div class="invalid-feedback">First name is required.</div>
           </div>
 
           <div class="col-md-6">
-            <label for="contactName" class="form-label">Contact name</label>
+            <label for="lastName" class="form-label">Last name</label>
             <input
-              id="contactName"
+              id="lastName"
               class="form-control"
-              formControlName="contactName"
-              [class.is-invalid]="isInvalid('contactName')"
+              formControlName="lastName"
+              [class.is-invalid]="isInvalid('lastName')"
             />
-            <div class="invalid-feedback">Contact name is required.</div>
+            <div class="invalid-feedback">Last name is required.</div>
           </div>
 
           <div class="col-md-6">
@@ -66,7 +66,7 @@
                   : 'Creating...'
                 : isEdit()
                   ? 'Save Changes'
-                  : 'Create Supplier'
+                  : 'Create Customer'
             }}
           </button>
         </div>
