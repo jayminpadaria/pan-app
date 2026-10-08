@@ -13,17 +13,6 @@
     </div>
 
     <div class="col-sm-6">
-      <label for="variant-dialog-barcode" class="form-label">Barcode</label>
-      <input
-        id="variant-dialog-barcode"
-        class="form-control"
-        formControlName="barcode"
-        [class.is-invalid]="isInvalid('barcode')"
-      />
-      <div class="invalid-feedback">Barcode is required.</div>
-    </div>
-
-    <div class="col-sm-6">
       <label for="variant-dialog-weight" class="form-label">Weight</label>
       <input
         id="variant-dialog-weight"
@@ -38,12 +27,16 @@
 
     <div class="col-sm-6">
       <label for="variant-dialog-unit" class="form-label">Unit</label>
-      <input
+      <select
         id="variant-dialog-unit"
-        class="form-control"
+        class="form-select"
         formControlName="unit"
         [class.is-invalid]="isInvalid('unit')"
-      />
+      >
+        <option value="">Select a unit</option>
+        <option value="gram">Gram</option>
+        <option value="kg">Kg</option>
+      </select>
       <div class="invalid-feedback">Unit is required.</div>
     </div>
 
@@ -61,6 +54,8 @@
 
   <div mat-dialog-actions align="end">
     <button mat-button type="button" mat-dialog-close>Cancel</button>
-    <button mat-flat-button color="primary" type="submit">{{ data.variant ? 'Update' : 'Add' }}</button>
+    <button mat-flat-button color="primary" type="submit">
+      {{ data.variant ? 'Update' : 'Add' }}
+    </button>
   </div>
 </form>

@@ -12,7 +12,7 @@ export interface Product {
 export interface ProductVariant {
   _id?: string;
   sku: string;
-  barcode: string;
+  barcode?: string;
   weight: number;
   unit: string;
   sizeLabel: string;

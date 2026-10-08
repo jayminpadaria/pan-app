@@ -21,7 +21,6 @@ export class ProductVariantDialogComponent {
 
   readonly form = this.formBuilder.group({
     sku: [this.data.variant?.sku ?? '', Validators.required],
-    barcode: [this.data.variant?.barcode ?? '', Validators.required],
     weight: [this.data.variant?.weight ?? 0, [Validators.required, Validators.min(0)]],
     unit: [this.data.variant?.unit ?? '', Validators.required],
     sizeLabel: [this.data.variant?.sizeLabel ?? '', Validators.required],

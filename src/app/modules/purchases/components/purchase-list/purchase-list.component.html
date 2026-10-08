@@ -1,0 +1,111 @@
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0">Purchases</h4>
+      <small class="text-muted">{{ total() }} total</small>
+    </div>
+    <button mat-flat-button color="primary" type="button" routerLink="/app/purchases/create">
+      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+      Add Purchase
+    </button>
+  </div>
+
+  <div class="card-body border-bottom d-flex align-items-center gap-3">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search flex-grow-1">
+      <mat-label>Search purchases</mat-label>
+      <input matInput [formControl]="search" placeholder="Invoice, source, supplier or status" />
+    </mat-form-field>
+    <button
+      mat-stroked-button
+      type="button"
+      class="flex-shrink-0"
+      [disabled]="!hasSearch"
+      (click)="clearSearch()"
+    >
+      Clear
+    </button>
+  </div>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="table-responsive">
+    <table
+      mat-table
+      matSort
+      [dataSource]="dataSource"
+      [matSortActive]="sortHeader()"
+      [matSortDirection]="sortDirection() === 'ASC' ? 'asc' : 'desc'"
+      (matSortChange)="onSort($event)"
+      class="w-100"
+    >
+      <ng-container matColumnDef="invoiceNumber">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Invoice</th>
+        <td mat-cell *matCellDef="let purchase" class="fw-semibold">{{ purchase.invoiceNumber }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="sourceType">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Source</th>
+        <td mat-cell *matCellDef="let purchase">{{ purchase.sourceType }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="supplierId">
+        <th mat-header-cell *matHeaderCellDef>Supplier ID</th>
+        <td mat-cell *matCellDef="let purchase">{{ purchase.supplierId || '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="totalCostAmount">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Total cost</th>
+        <td mat-cell *matCellDef="let purchase">{{ purchase.totalCostAmount | number: '1.2-2' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+        <td mat-cell *matCellDef="let purchase">{{ purchase.status }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="transactionDate">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+        <td mat-cell *matCellDef="let purchase">{{ transactionDate(purchase) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let purchase">
+          <button
+            mat-icon-button
+            type="button"
+            [routerLink]="['/app/purchases', purchase._id, 'edit']"
+            [attr.aria-label]="'Edit purchase ' + purchase.invoiceNumber"
+            [attr.title]="'Edit purchase ' + purchase.invoiceNumber"
+          >
+            <i class="bi bi-pencil" aria-hidden="true"></i>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+      <tr class="mat-row">
+        <td
+          class="mat-cell text-center text-muted p-4"
+          [attr.colspan]="displayedColumns.length"
+          *matNoDataRow
+        >
+          No purchases found.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <mat-paginator
+    [length]="total()"
+    [pageIndex]="page() - 1"
+    [pageSize]="limit()"
+    [pageSizeOptions]="[5, 10, 25, 50]"
+    (page)="onPage($event)"
+    showFirstLastButtons
+  />
+</div>

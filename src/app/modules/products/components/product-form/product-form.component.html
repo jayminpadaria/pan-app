@@ -107,7 +107,6 @@
               <thead>
                 <tr>
                   <th scope="col">SKU</th>
-                  <th scope="col">Barcode</th>
                   <th scope="col">Weight</th>
                   <th scope="col">Unit</th>
                   <th scope="col">Size label</th>
@@ -115,10 +114,13 @@
                 </tr>
               </thead>
               <tbody>
-                @for (variant of variants.controls; track getVariantId(variant) ?? $index; let i = $index) {
+                @for (
+                  variant of variants.controls;
+                  track getVariantId(variant) ?? $index;
+                  let i = $index
+                ) {
                   <tr>
                     <td>{{ variant.controls.sku.value }}</td>
-                    <td>{{ variant.controls.barcode.value }}</td>
                     <td>{{ variant.controls.weight.value }}</td>
                     <td>{{ variant.controls.unit.value }}</td>
                     <td>{{ variant.controls.sizeLabel.value }}</td>

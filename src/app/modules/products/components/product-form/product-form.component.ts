@@ -17,7 +17,6 @@ import { ProductVariantDialogComponent } from './product-variant-dialog.componen
 
 interface ProductVariantControls {
   sku: FormControl<string>;
-  barcode: FormControl<string>;
   weight: FormControl<number>;
   unit: FormControl<string>;
   sizeLabel: FormControl<string>;
@@ -93,7 +92,6 @@ export class ProductFormComponent implements OnInit {
   private addVariant(variant?: ProductVariant) {
     const group = this.formBuilder.group({
       sku: [variant?.sku ?? '', Validators.required],
-      barcode: [variant?.barcode ?? '', Validators.required],
       weight: [variant?.weight ?? 0, [Validators.required, Validators.min(0)]],
       unit: [variant?.unit ?? '', Validators.required],
       sizeLabel: [variant?.sizeLabel ?? '', Validators.required],

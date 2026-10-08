@@ -16,6 +16,7 @@ export class SidebarComponent {
     { label: 'Dashboard', link: '/app/dashboard', icon: 'bi-speedometer2' },
     { label: 'Users', link: '/app/users', icon: 'bi-people' },
     { label: 'Products', link: '/app/products', icon: 'bi-box-seam' },
+    { label: 'Purchases', link: '/app/purchases', icon: 'bi-receipt' },
     { label: 'Categories', link: '/app/categories', icon: 'bi-tags' },
     { label: 'Suppliers', link: '/app/suppliers', icon: 'bi-truck' },
     { label: 'Customers', link: '/app/customers', icon: 'bi-person-vcard' },

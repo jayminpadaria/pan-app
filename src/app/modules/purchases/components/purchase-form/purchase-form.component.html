@@ -1,0 +1,265 @@
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h4 class="mb-0">{{ isEdit() ? 'Edit Purchase' : 'Create Purchase' }}</h4>
+    <button mat-stroked-button type="button" routerLink="/app/purchases">Back to purchases</button>
+  </div>
+
+  <div class="card-body">
+    @if (loadingPurchase()) {
+      <mat-progress-bar mode="indeterminate" />
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="savePurchase()" novalidate>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label for="transactionDate" class="form-label">Transaction date</label>
+            <input
+              id="transactionDate"
+              type="date"
+              class="form-control"
+              formControlName="transactionDate"
+              [class.is-invalid]="isInvalid('transactionDate')"
+            />
+            <div class="invalid-feedback">Transaction date is required.</div>
+          </div>
+          <div class="col-md-2">
+            <label for="invoiceNumber" class="form-label">Invoice number</label>
+            <input
+              id="invoiceNumber"
+              class="form-control"
+              formControlName="invoiceNumber"
+              [readonly]="isInternalProduction()"
+              [class.is-invalid]="isInvalid('invoiceNumber')"
+            />
+            <div class="invalid-feedback">Invoice number is required.</div>
+          </div>
+
+          <div class="col-md-3">
+            <label for="sourceType" class="form-label">Source type</label>
+            <select
+              id="sourceType"
+              class="form-control"
+              formControlName="sourceType"
+              [class.is-invalid]="isInvalid('sourceType')"
+            >
+              <option value="">Select a source type</option>
+              <option [value]="sourceTypes.EXTERNAL_VENDOR">External vendor</option>
+              <option [value]="sourceTypes.INTERNAL_PRODUCTION">Internal production</option>
+            </select>
+            <div class="invalid-feedback">Source type is required.</div>
+          </div>
+
+          <div class="col-md-3">
+            <label for="supplierSearch" class="form-label">Supplier</label>
+            <input
+              id="supplierSearch"
+              type="text"
+              class="form-control"
+              placeholder="Search suppliers"
+              aria-label="Supplier"
+              matInput
+              [formControl]="supplierSearch"
+              [matAutocomplete]="supplierAuto"
+              (input)="onSupplierInput()"
+            />
+            <mat-autocomplete
+              autoActiveFirstOption
+              #supplierAuto="matAutocomplete"
+              (optionSelected)="selectSupplier($event)"
+            >
+              @if (loadingSuppliers()) {
+                <mat-option disabled>Loading suppliers...</mat-option>
+              } @else {
+                @for (supplier of filteredSuppliers(); track supplier._id) {
+                  <mat-option [value]="supplier._id">
+                    {{ supplier.companyName }} — {{ supplier.contactName }}
+                  </mat-option>
+                } @empty {
+                  <mat-option disabled>No matching suppliers</mat-option>
+                }
+              }
+            </mat-autocomplete>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h5 class="mb-0">Purchase items</h5>
+              @if (items.invalid && items.touched) {
+                <small class="text-danger">Add at least one valid item.</small>
+              }
+            </div>
+            <button mat-stroked-button type="button" (click)="addItem()">
+              <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+              Add item
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+              <thead>
+                <tr>
+                  <th scope="col">Product / variant</th>
+                  <th scope="col">Batch number</th>
+                  <th scope="col">Quantity</th>
+                  <th scope="col">Cost / unit</th>
+                  <th scope="col">Retail price</th>
+                  <th scope="col">Expiry date</th>
+                  <th scope="col">Line total</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody formArrayName="items">
+                @for (item of items.controls; track $index; let i = $index) {
+                  <tr [formGroupName]="i">
+                    <td>
+                      <input
+                        class="form-control"
+                        aria-label="Search product and variant"
+                        placeholder="Search product or variant"
+                        formControlName="productSearch"
+                        [matAutocomplete]="productAuto"
+                        (input)="onProductSearchInput(item)"
+                        (blur)="touchProductSelection(item)"
+                      />
+                      <mat-autocomplete
+                        #productAuto="matAutocomplete"
+                        autoActiveFirstOption
+                        (optionSelected)="selectProductVariant(item, $event)"
+                      >
+                        @if (productSearchIsLoading(item)) {
+                          <mat-option disabled>Searching products...</mat-option>
+                        } @else {
+                          @for (product of productOptionsFor(item); track product._id) {
+                            <mat-optgroup [label]="product.name">
+                              @for (
+                                variant of product.variants ?? [];
+                                track variant._id ?? $index
+                              ) {
+                                @if (variant._id) {
+                                  for
+                                  <mat-option [value]="variant._id">
+                                    {{ variant.sku }} — {{ variant.sizeLabel }}
+                                  </mat-option>
+                                }
+                              } @empty {
+                                <mat-option disabled>No variants available</mat-option>
+                              }
+                            </mat-optgroup>
+                          } @empty {
+                            <mat-option disabled>No matching product variants</mat-option>
+                          }
+                        }
+                      </mat-autocomplete>
+                      @if (productSelectionInvalid(item)) {
+                        <div class="invalid-feedback d-block">
+                          Select a product variant from the list.
+                        </div>
+                      }
+                    </td>
+                    <td>
+                      <input
+                        class="form-control"
+                        aria-label="Batch number"
+                        placeholder="B-YYMMDD"
+                        formControlName="batchNumber"
+                        [class.is-invalid]="itemInvalid(item, 'batchNumber')"
+                      />
+                      <div class="invalid-feedback">
+                        Use the format B-YYMMDD, for example B-260215.
+                      </div>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        min="1"
+                        class="form-control"
+                        aria-label="Quantity"
+                        formControlName="quantity"
+                        [class.is-invalid]="itemInvalid(item, 'quantity')"
+                      />
+                      <div class="invalid-feedback">Quantity must be at least one.</div>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        class="form-control"
+                        aria-label="Cost price per unit"
+                        formControlName="costPrice"
+                        [class.is-invalid]="itemInvalid(item, 'costPrice')"
+                      />
+                      <div class="invalid-feedback">Cost must be zero or greater.</div>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        class="form-control"
+                        aria-label="Retail price"
+                        formControlName="retailPrice"
+                        [class.is-invalid]="
+                          itemInvalid(item, 'retailPrice') || retailPriceMustExceedCost(item)
+                        "
+                      />
+                      <div class="invalid-feedback">Retail price must be zero or greater.</div>
+                      @if (retailPriceMustExceedCost(item)) {
+                        <div class="invalid-feedback d-block">
+                          Retail price must be greater than cost price.
+                        </div>
+                      }
+                    </td>
+                    <td>
+                      <input
+                        type="date"
+                        class="form-control"
+                        aria-label="Expiry date"
+                        formControlName="expiryDate"
+                      />
+                    </td>
+                    <td class="text-nowrap">{{ lineTotal(item) | number: '1.2-2' }}</td>
+                    <td>
+                      <button
+                        mat-icon-button
+                        type="button"
+                        [attr.aria-label]="'Remove item ' + (i + 1)"
+                        title="Remove item"
+                        (click)="removeItem(i)"
+                      >
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="8" class="text-center text-muted">No items added.</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="6" class="text-end">Total cost</th>
+                  <th colspan="2">{{ totalCostAmount() | number: '1.2-2' }}</th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end">
+          <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+            {{
+              saving()
+                ? isEdit()
+                  ? 'Saving...'
+                  : 'Creating...'
+                : isEdit()
+                  ? 'Save Changes'
+                  : 'Create Purchase'
+            }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</div>
