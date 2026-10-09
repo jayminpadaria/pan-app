@@ -11,15 +11,17 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { RouterModule } from '@angular/router';
 import { debounceTime } from 'rxjs';
+import { Customer } from '../../../../shared/interfaces/customer.interface';
 import { ListFilter } from '../../../../shared/interfaces/list.interface';
-import { Purchase } from '../../../../shared/interfaces/purchase.interface';
+import { Sales as Sale } from '../../../../shared/interfaces/sales.interface';
+import { CustomersService } from '../../../../shared/services/customers.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
-import { PurchasesService } from '../../../../shared/services/purchases.service';
+import { SalesService } from '../../../../shared/services/sales.service';
 
-const DEFAULT_SORT = { header: 'transactionDate', direction: 'DESC' };
+const DEFAULT_SORT = { header: 'salesDate', direction: 'DESC' };
 
 @Component({
-  selector: 'app-purchase-list',
+  selector: 'app-sales-list',
   standalone: true,
   imports: [
     CommonModule,
@@ -33,30 +35,32 @@ const DEFAULT_SORT = { header: 'transactionDate', direction: 'DESC' };
     MatSortModule,
     MatTableModule,
   ],
-  templateUrl: './purchase-list.component.html',
-  styleUrl: './purchase-list.component.scss',
+  templateUrl: './sales-list.component.html',
+  styleUrl: './sales-list.component.scss',
 })
-export class PurchaseListComponent implements OnInit {
-  private readonly purchasesService = inject(PurchasesService);
+export class SalesListComponent implements OnInit {
+  private readonly salesService = inject(SalesService);
+  private readonly customersService = inject(CustomersService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly displayedColumns = [
-    'invoiceNumber',
-    'sourceType',
-    'supplierId',
-    'totalCostAmount',
-    'status',
-    'transactionDate',
-    'actions',
+    'orderNumber',
+    'customer',
+    'itemCount',
+    'subTotal',
+    'taxAmount',
+    'grandTotal',
+    'paymentStatus',
+    'salesDate',
   ];
-  readonly dataSource = new MatTableDataSource<Purchase>([]);
+  readonly dataSource = new MatTableDataSource<Sale>([]);
   readonly search = new FormControl('', { nonNullable: true });
+  readonly customers = signal<Customer[]>([]);
   readonly total = signal(0);
   readonly page = signal(1);
   readonly limit = signal(10);
   readonly loading = signal(false);
-  readonly updatingPurchaseId = signal<string | null>(null);
   readonly sortHeader = signal(DEFAULT_SORT.header);
   readonly sortDirection = signal(DEFAULT_SORT.direction);
 
@@ -67,6 +71,7 @@ export class PurchaseListComponent implements OnInit {
         this.page.set(1);
         this.load();
       });
+    this.loadCustomers();
     this.load();
   }
 
@@ -91,54 +96,17 @@ export class PurchaseListComponent implements OnInit {
     this.load();
   }
 
-  transactionDate(purchase: Purchase) {
-    return new Date(purchase.transactionDate).toLocaleDateString();
-  }
-
-  isCompleted(purchase: Purchase) {
-    return purchase.status.toUpperCase() === 'COMPLETED';
-  }
-
-  markAsCompleted(purchase: Purchase) {
-    if (
-      this.updatingPurchaseId() !== null ||
-      this.isCompleted(purchase)
-    ) {
-      return;
+  customerName(sale: Sale) {
+    if (!sale.customerId) {
+      return 'Walk-in';
     }
-
-    this.notification.confirmation(
-      'Are you sure you want to mark this purchase as completed?',
-      () => this.completePurchase(purchase),
-      'Confirm purchase completion',
-      undefined,
-      'This action is irreversible. The purchase record can no longer be edited, and its items will be added to stock.',
-    );
-  }
-
-  private completePurchase(purchase: Purchase) {
-    if (this.updatingPurchaseId() !== null || this.isCompleted(purchase)) {
-      return;
-    }
-
-    this.updatingPurchaseId.set(purchase._id);
-    this.purchasesService.updateStatus(purchase._id, 'COMPLETED').subscribe({
-      next: () => {
-        purchase.status = 'COMPLETED';
-        this.dataSource.data = [...this.dataSource.data];
-        this.notification.success('Purchase marked as completed.');
-        this.updatingPurchaseId.set(null);
-      },
-      error: () => {
-        this.notification.error('Failed to mark purchase as completed.');
-        this.updatingPurchaseId.set(null);
-      },
-    });
+    const customer = this.customers().find((entry) => entry._id === sale.customerId);
+    return customer ? `${customer.firstName} ${customer.lastName}` : sale.customerId;
   }
 
   load() {
     this.loading.set(true);
-    this.purchasesService
+    this.salesService
       .getAll({
         filterList: this.buildFilterList(),
         sortHeader: this.sortHeader(),
@@ -148,22 +116,38 @@ export class PurchaseListComponent implements OnInit {
         isPagination: true,
       })
       .subscribe({
-        next: (res) => {
-          this.dataSource.data = res.result?.documentItems ?? [];
-          this.total.set(res.result?.totalDocument ?? 0);
+        next: (response) => {
+          this.dataSource.data = response.result?.documentItems ?? [];
+          this.total.set(response.result?.totalDocument ?? 0);
           this.loading.set(false);
         },
         error: () => {
-          this.notification.error('Failed to load purchases.');
+          this.notification.error('Failed to load sales.');
           this.loading.set(false);
         },
+      });
+  }
+
+  private loadCustomers() {
+    this.customersService
+      .getAll({
+        filterList: [],
+        sortHeader: 'firstName',
+        sortDirection: 'ASC',
+        page: 1,
+        limit: 1000,
+        isPagination: false,
+      })
+      .subscribe({
+        next: (response) => this.customers.set(response.result?.documentItems ?? []),
+        error: () => this.notification.error('Failed to load customers.'),
       });
   }
 
   private buildFilterList(): ListFilter[] {
     return [
       {
-        columnName: ['invoiceNumber', 'sourceType', 'supplierId', 'status'],
+        columnName: ['orderNumber', 'customerId', 'paymentStatus'],
         type: 'search',
         value: this.search.value.trim(),
       },

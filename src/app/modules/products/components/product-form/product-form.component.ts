@@ -19,7 +19,6 @@ interface ProductVariantControls {
   sku: FormControl<string>;
   weight: FormControl<number>;
   unit: FormControl<string>;
-  sizeLabel: FormControl<string>;
 }
 
 @Component({
@@ -51,7 +50,6 @@ export class ProductFormComponent implements OnInit {
     name: ['', Validators.required],
     sku: [''],
     brand: [''],
-    description: [''],
     categories: this.formBuilder.control<string[]>([]),
     variants: this.formBuilder.array<FormGroup<ProductVariantControls>>([]),
   });
@@ -78,7 +76,7 @@ export class ProductFormComponent implements OnInit {
         }
 
         this.patchProduct(res.result);
-        this.setVariants(res.result?.variants ?? []);
+        this.setVariants(res.result.variants ?? []);
         this.loadingProduct.set(false);
       },
       error: () => {
@@ -94,7 +92,6 @@ export class ProductFormComponent implements OnInit {
       sku: [variant?.sku ?? '', Validators.required],
       weight: [variant?.weight ?? 0, [Validators.required, Validators.min(0)]],
       unit: [variant?.unit ?? '', Validators.required],
-      sizeLabel: [variant?.sizeLabel ?? '', Validators.required],
     });
     this.variantIds.set(group, variant?._id ?? null);
     if (this.isEdit() && variant?._id) {
@@ -147,10 +144,9 @@ export class ProductFormComponent implements OnInit {
     this.savingVariant.set(true);
     this.productsService.removeVariant(this.productId, variantId).subscribe({
       next: () => {
-        this.refreshVariants(
-          'Variant removed successfully.',
-          'Variant was removed, but the variant list could not be refreshed.',
-        );
+        this.variants.removeAt(index);
+        this.notification.success('Variant removed successfully.');
+        this.savingVariant.set(false);
       },
       error: () => {
         this.notification.error('Failed to remove variant.');
@@ -184,11 +180,14 @@ export class ProductFormComponent implements OnInit {
       : this.productsService.addVariant(this.productId, payload);
 
     request.subscribe({
-      next: () => {
-        this.refreshVariants(
-          'Variant saved successfully.',
-          'Variant was saved, but the variant list could not be refreshed.',
-        );
+      next: (response) => {
+        if (variant) {
+          variant.patchValue(payload);
+        } else {
+          this.addVariant(this.variantFromResponse(response.result, payload));
+        }
+        this.notification.success('Variant saved successfully.');
+        this.savingVariant.set(false);
       },
       error: () => {
         this.notification.error('Failed to save variant.');
@@ -197,31 +196,20 @@ export class ProductFormComponent implements OnInit {
     });
   }
 
-  private refreshVariants(successMessage: string, failureMessage: string) {
-    if (!this.productId) {
-      this.notification.error(failureMessage);
-      this.savingVariant.set(false);
-      return;
+  private variantFromResponse(result: unknown, payload: ProductVariantInput): ProductVariant {
+    if (typeof result !== 'object' || result === null) {
+      return payload;
     }
-
-    this.productsService.getById(this.productId).subscribe({
-      next: (response) => {
-        const product = response.result;
-        if (!product) {
-          this.notification.error(failureMessage);
-          this.savingVariant.set(false);
-          return;
-        }
-
-        this.setVariants(product.variants ?? []);
-        this.notification.success(successMessage);
-        this.savingVariant.set(false);
-      },
-      error: () => {
-        this.notification.error(failureMessage);
-        this.savingVariant.set(false);
-      },
-    });
+    const variant = 'variant' in result ? result.variant : result;
+    if (
+      typeof variant === 'object' &&
+      variant !== null &&
+      '_id' in variant &&
+      typeof variant._id === 'string'
+    ) {
+      return { ...payload, _id: variant._id };
+    }
+    return payload;
   }
 
   get selectedCategories() {
@@ -268,7 +256,6 @@ export class ProductFormComponent implements OnInit {
       this.form.controls.name,
       this.form.controls.sku,
       this.form.controls.brand,
-      this.form.controls.description,
       this.form.controls.categories,
     ];
     if (this.isEdit() ? productControls.some((control) => control.invalid) : this.form.invalid) {
@@ -286,7 +273,6 @@ export class ProductFormComponent implements OnInit {
       name: values.name.trim(),
       ...(values.sku.trim() ? { sku: values.sku.trim() } : {}),
       ...(values.brand.trim() ? { brand: values.brand.trim() } : {}),
-      ...(values.description.trim() ? { description: values.description.trim() } : {}),
       categories,
       ...(!this.isEdit() ? { variants: values.variants } : {}),
     };
@@ -339,9 +325,7 @@ export class ProductFormComponent implements OnInit {
   private patchProduct(product: Product) {
     this.form.patchValue({
       name: product.name,
-      sku: product.sku ?? '',
       brand: product.brand ?? '',
-      description: product.description ?? '',
       categories: product.categories ?? [],
     });
     this.variants.clear();

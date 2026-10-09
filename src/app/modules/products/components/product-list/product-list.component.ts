@@ -41,7 +41,7 @@ export class ProductListComponent implements OnInit {
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly displayedColumns = ['name', 'sku', 'brand', 'categories', 'actions'];
+  readonly displayedColumns = ['name', 'brand', 'categories', 'actions'];
   readonly dataSource = new MatTableDataSource<Product>([]);
   readonly search = new FormControl('', { nonNullable: true });
   readonly total = signal(0);

@@ -23,7 +23,6 @@ export class ProductVariantDialogComponent {
     sku: [this.data.variant?.sku ?? '', Validators.required],
     weight: [this.data.variant?.weight ?? 0, [Validators.required, Validators.min(0)]],
     unit: [this.data.variant?.unit ?? '', Validators.required],
-    sizeLabel: [this.data.variant?.sizeLabel ?? '', Validators.required],
   });
 
   get title() {

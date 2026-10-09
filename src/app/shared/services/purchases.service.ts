@@ -26,4 +26,8 @@ export class PurchasesService {
   update(id: string, purchase: Omit<Purchase, '_id'>) {
     return this.http.put<ApiResponseFormat>(`${API_URL}/update/${id}`, purchase);
   }
+
+  updateStatus(id: string, status: string) {
+    return this.http.put<ApiResponseFormat>(`${API_URL}/update-status/${id}`, { status });
+  }
 }

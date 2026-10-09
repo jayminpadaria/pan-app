@@ -57,10 +57,12 @@ export class NotificationService {
     okCallback: () => void,
     title = 'Are you sure?',
     cancelCallback: () => any = () => {},
+    note?: string,
   ) {
     const dialogRef = this.dialog.open(ConfirmationDialog, {
-      width: '250px',
-      data: { message: message, title: title },
+      width: '420px',
+      maxWidth: '90vw',
+      data: { message: message, title: title, note },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -117,6 +119,7 @@ export class NotificationService {
 export interface DialogData {
   message: string;
   title: string;
+  note?: string;
 }
 
 @Component({
@@ -124,11 +127,14 @@ export interface DialogData {
   template: `
     <h1 mat-dialog-title>{{ data.title }}</h1>
     <div mat-dialog-content>
-      {{ data.message }}
+      <p>{{ data.message }}</p>
+      @if (data.note) {
+        <p class="small text-muted mb-0"><strong>Note:</strong> {{ data.note }}</p>
+      }
     </div>
-    <div mat-dialog-actions>
-      <button mat-button (click)="onNoClick()">Cancel</button>
-      <button mat-flat-button (click)="onYesClick()" cdkFocusInitial>Ok</button>
+    <div mat-dialog-actions align="end">
+      <button mat-button (click)="onNoClick()" cdkFocusInitial>Cancel</button>
+      <button mat-flat-button color="primary" (click)="onYesClick()">Confirm</button>
     </div>
   `,
 })

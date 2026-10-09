@@ -17,6 +17,7 @@ export class SidebarComponent {
     { label: 'Users', link: '/app/users', icon: 'bi-people' },
     { label: 'Products', link: '/app/products', icon: 'bi-box-seam' },
     { label: 'Purchases', link: '/app/purchases', icon: 'bi-receipt' },
+    { label: 'Sales', link: '/app/sales', icon: 'bi-cart-check' },
     { label: 'Categories', link: '/app/categories', icon: 'bi-tags' },
     { label: 'Suppliers', link: '/app/suppliers', icon: 'bi-truck' },
     { label: 'Customers', link: '/app/customers', icon: 'bi-person-vcard' },
@@ -26,7 +27,7 @@ export class SidebarComponent {
     this.auth.logout();
     this.router.navigate(['/signin']);
   }
-  isCollapsed = false;
+  isCollapsed = true;
 
   toggleSidebar() {
     this.isCollapsed = !this.isCollapsed;

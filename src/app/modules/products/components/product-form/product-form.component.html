@@ -10,7 +10,7 @@
     } @else {
       <form [formGroup]="form" (ngSubmit)="saveProduct()" novalidate>
         <div class="row g-3">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="name" class="form-label">Product name</label>
             <input
               id="name"
@@ -21,17 +21,12 @@
             <div class="invalid-feedback">Product name is required.</div>
           </div>
 
-          <div class="col-md-6">
-            <label for="sku" class="form-label">SKU</label>
-            <input id="sku" class="form-control" formControlName="sku" />
-          </div>
-
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="brand" class="form-label">Brand</label>
             <input id="brand" class="form-control" formControlName="brand" />
           </div>
 
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="categories" class="form-label">Categories</label>
             <div class="form-control category-control">
               <mat-chip-grid
@@ -76,16 +71,6 @@
               }
             </mat-autocomplete>
           </div>
-
-          <div class="col-12">
-            <label for="description" class="form-label">Description</label>
-            <textarea
-              id="description"
-              class="form-control"
-              rows="3"
-              formControlName="description"
-            ></textarea>
-          </div>
         </div>
 
         <div class="mt-4">
@@ -109,7 +94,6 @@
                   <th scope="col">SKU</th>
                   <th scope="col">Weight</th>
                   <th scope="col">Unit</th>
-                  <th scope="col">Size label</th>
                   <th scope="col" class="text-end">Actions</th>
                 </tr>
               </thead>
@@ -123,10 +107,9 @@
                     <td>{{ variant.controls.sku.value }}</td>
                     <td>{{ variant.controls.weight.value }}</td>
                     <td>{{ variant.controls.unit.value }}</td>
-                    <td>{{ variant.controls.sizeLabel.value }}</td>
                     <td class="text-end text-nowrap">
                       <button
-                        mat-stroked-button
+                        mat-icon-button
                         type="button"
                         [attr.aria-label]="'Edit variant ' + (i + 1)"
                         title="Edit variant"
@@ -134,7 +117,6 @@
                         (click)="openVariantDialog(variant)"
                       >
                         <i class="bi bi-pencil me-1" aria-hidden="true"></i>
-                        Edit
                       </button>
                       <button
                         mat-icon-button
