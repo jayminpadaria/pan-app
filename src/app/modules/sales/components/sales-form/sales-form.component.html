@@ -53,8 +53,7 @@
             formControlName="paymentStatus"
             [class.is-invalid]="isInvalid('paymentStatus')"
           >
-            <option value="PENDING">Pending</option>
-            <option value="PARTIAL">Partially paid</option>
+            <option value="UNPAID">Unpaid</option>
             <option value="PAID">Paid</option>
           </select>
           <div class="invalid-feedback">Payment status is required.</div>

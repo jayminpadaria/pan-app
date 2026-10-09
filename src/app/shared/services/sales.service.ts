@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { ApiListResponseFormat, ApiResponseFormat } from '../interfaces/api-response.interface';
 import { ListRequest } from '../interfaces/list.interface';
+import { StockLookupResponse } from '../interfaces/product-stock.interface';
 import { Sales } from '../interfaces/sales.interface';
 
 const API_URL = `${environment.apiUrl}/sales`;
@@ -19,9 +20,10 @@ export class SalesService {
     return this.http.post<ApiResponseFormat>(API_URL, sale);
   }
 
-  stock(sku: string, barcode: string) {
-    return this.http.get<ApiResponseFormat>(`${API_URL}/stock-lookup`, {
-      params: { sku, barcode },
-    });
+  stock(barcode: string) {
+    return this.http.get<ApiResponseFormat & { result?: StockLookupResponse }>(
+      `${API_URL}/stock-lookup`,
+      { params: { barcode } },
+    );
   }
 }

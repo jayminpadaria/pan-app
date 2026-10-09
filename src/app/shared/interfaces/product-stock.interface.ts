@@ -1,3 +1,5 @@
+import { Product, ProductVariant } from './product.interface';
+
 export interface ProductStock {
   _id: string;
   productId: string;
@@ -14,4 +16,17 @@ export interface ProductStock {
   isDeadStock: boolean;
   isActive: boolean;
   isDeleted: boolean;
+}
+
+export interface StockLookupResponse {
+  product: Pick<Product, '_id' | 'name' | 'brand' | 'categories'>;
+  variant: ProductVariant & {
+    _id: string;
+    isActive: boolean;
+    isDeleted: boolean;
+  };
+  stock: {
+    totalAvailableQty: number;
+    batches: ProductStock[];
+  };
 }

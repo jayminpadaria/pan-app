@@ -1,20 +1,11 @@
 import { Component, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ValidatorFn,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Customer } from '../../../../shared/interfaces/customer.interface';
-import { ProductStock } from '../../../../shared/interfaces/product-stock.interface';
-import { Product } from '../../../../shared/interfaces/product.interface';
+import { StockLookupResponse } from '../../../../shared/interfaces/product-stock.interface';
 import { Sales, SalesItem } from '../../../../shared/interfaces/sales.interface';
 import { CustomersService } from '../../../../shared/services/customers.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
-import { ProductStocksService } from '../../../../shared/services/product-stocks.service';
-import { ProductsService } from '../../../../shared/services/products.service';
 import { SalesService } from '../../../../shared/services/sales.service';
 
 interface SalesItemControls {
@@ -52,8 +43,6 @@ const validLineDiscount: ValidatorFn = (control) => {
 export class SalesFormComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder).nonNullable;
   private readonly salesService = inject(SalesService);
-  private readonly stockService = inject(ProductStocksService);
-  private readonly productsService = inject(ProductsService);
   private readonly customersService = inject(CustomersService);
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
@@ -70,7 +59,7 @@ export class SalesFormComponent implements OnInit {
     orderNumber: ['', Validators.required],
     customerId: [''],
     salesDate: [today(), Validators.required],
-    paymentStatus: ['PENDING', Validators.required],
+    paymentStatus: ['UNPAID', Validators.required],
     taxAmount: [0, [Validators.required, Validators.min(0)]],
     items: this.formBuilder.array<FormGroup<SalesItemControls>>([], Validators.minLength(1)),
   });
@@ -92,45 +81,26 @@ export class SalesFormComponent implements OnInit {
     }
 
     this.scanning.set(true);
-    this.stockService.getByBarcode(barcode).subscribe({
+    this.salesService.stock(barcode).subscribe({
       next: (response) => {
-        const stock = response.result;
-        if (!stock) {
-          this.notification.error('No stock batch was found for this barcode.');
+        const lookup = response.result;
+        if (!lookup?.product?._id || !lookup.variant?._id || !lookup.stock) {
+          this.notification.error('The barcode lookup returned incomplete product or stock details.');
           this.finishScan();
           return;
         }
-        if (
-          !stock.isActive ||
-          stock.isDeleted ||
-          stock.isDeadStock ||
-          stock.availableQty < 1
-        ) {
+        if (!lookup.variant.isActive || lookup.variant.isDeleted) {
+          this.notification.error('This product variant is inactive.');
+          this.finishScan();
+          return;
+        }
+        if (lookup.stock.totalAvailableQty < 1) {
           this.notification.error('This item has no saleable stock available.');
           this.finishScan();
           return;
         }
-
-        this.productsService.getById(stock.productId).subscribe({
-          next: (productResponse) => {
-            const product = productResponse.result;
-            const variant = product?.variants?.find(
-              (candidate) => candidate.barcode?.trim() === barcode,
-            );
-            if (!product || !variant?._id) {
-              this.notification.error('The barcode could not be matched to a product variant.');
-              this.finishScan();
-              return;
-            }
-
-            this.addStockedVariant(stock, product, variant);
-            this.finishScan();
-          },
-          error: () => {
-            this.notification.error('Failed to load the product for this barcode.');
-            this.finishScan();
-          },
-        });
+        this.addStockedVariant(lookup);
+        this.finishScan();
       },
       error: () => {
         this.notification.error('Failed to look up stock for this barcode.');
@@ -215,16 +185,36 @@ export class SalesFormComponent implements OnInit {
     });
   }
 
-  private addStockedVariant(stock: ProductStock, product: Product, variant: NonNullable<Product['variants']>[number]) {
+  private addStockedVariant(lookup: StockLookupResponse) {
+    const { product, variant } = lookup;
+    const batches = lookup.stock.batches
+      .filter(
+        (batch) =>
+          batch.isActive &&
+          !batch.isDeleted &&
+          !batch.isDeadStock &&
+          batch.availableQty > 0,
+      )
+      .sort(
+        (left, right) =>
+          new Date(left.receivedAt).getTime() - new Date(right.receivedAt).getTime(),
+      );
+    const batch = batches.find((candidate) => {
+      const existing = this.items.controls.find(
+        (item) => item.controls.productStockId.value === candidate._id,
+      );
+      return !existing || existing.controls.quantity.value < candidate.availableQty;
+    });
+    if (!batch) {
+      this.notification.error('No available stock batch was found for this barcode.');
+      return;
+    }
+
     const existingItem = this.items.controls.find(
-      (item) => item.controls.productStockId.value === stock._id,
+      (item) => item.controls.productStockId.value === batch._id,
     );
     if (existingItem) {
       const nextQuantity = existingItem.controls.quantity.value + 1;
-      if (nextQuantity > stock.availableQty) {
-        this.notification.error('The available quantity for this stock batch has been reached.');
-        return;
-      }
       existingItem.controls.quantity.setValue(nextQuantity);
       existingItem.controls.quantity.markAsDirty();
       return;
@@ -232,15 +222,15 @@ export class SalesFormComponent implements OnInit {
 
     const item = this.formBuilder.group(
       {
-        productId: [stock.productId],
-        productVariantId: [variant._id ?? ''],
-        productStockId: [stock._id],
+        productId: [product._id],
+        productVariantId: [variant._id],
+        productStockId: [batch._id],
         productName: [`${product.name} — ${variant.sku}`],
-        batchNumber: [stock.batchNumber],
-        availableQty: [stock.availableQty],
-        quantity: [1, [Validators.required, Validators.min(1), Validators.max(stock.availableQty)]],
-        costPriceAtSale: [stock.costPrice],
-        soldPrice: [stock.retailPrice, [Validators.required, Validators.min(0)]],
+        batchNumber: [batch.batchNumber],
+        availableQty: [batch.availableQty],
+        quantity: [1, [Validators.required, Validators.min(1), Validators.max(batch.availableQty)]],
+        costPriceAtSale: [batch.costPrice],
+        soldPrice: [batch.retailPrice, [Validators.required, Validators.min(0)]],
         discountAmount: [0, [Validators.required, Validators.min(0)]],
       },
       { validators: validLineDiscount },
