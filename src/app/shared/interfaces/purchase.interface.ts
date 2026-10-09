@@ -8,6 +8,7 @@ export interface Purchase {
   invoiceNumber: string;
   sourceType: SOURCE_TYPE;
   supplierId?: string | null;
+  supplierName?: string | null;
   items: PurchaseItem[];
   totalCostAmount: number;
   status: string;

@@ -44,7 +44,7 @@ export class PurchaseListComponent implements OnInit {
   readonly displayedColumns = [
     'invoiceNumber',
     'sourceType',
-    'supplierId',
+    'supplierName',
     'totalCostAmount',
     'status',
     'transactionDate',
@@ -100,10 +100,7 @@ export class PurchaseListComponent implements OnInit {
   }
 
   markAsCompleted(purchase: Purchase) {
-    if (
-      this.updatingPurchaseId() !== null ||
-      this.isCompleted(purchase)
-    ) {
+    if (this.updatingPurchaseId() !== null || this.isCompleted(purchase)) {
       return;
     }
 
