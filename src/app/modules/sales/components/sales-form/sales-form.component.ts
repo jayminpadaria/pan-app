@@ -199,7 +199,7 @@ export class SalesFormComponent implements OnInit {
       taxAmount: value.taxAmount,
       grandTotal: this.grandTotal(),
       paymentStatus: value.paymentStatus,
-      salesDate: new Date(`${value.salesDate}T00:00:00`),
+      salesDate: new Date(`${value.salesDate}T00:00:00.000Z`),
     };
 
     this.saving.set(true);

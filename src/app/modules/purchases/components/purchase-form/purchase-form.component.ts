@@ -46,7 +46,11 @@ interface PurchaseItemControls {
   expiryDate: FormControl<string>;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => {
+  const date = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
 const retailPriceGreaterThanCost: ValidatorFn = (control) => {
   const costValue = control.get('costPrice')?.value;
   const retailValue = control.get('retailPrice')?.value;
@@ -122,6 +126,10 @@ export class PurchaseFormComponent implements OnInit {
     return this.form.controls.sourceType.value === SOURCE_TYPE.INTERNAL_PRODUCTION;
   }
 
+  isCompleted() {
+    return this.form.controls.status.value.toUpperCase() === 'COMPLETED';
+  }
+
   supplierLabel(supplierId: string) {
     return (
       this.availableSuppliers().find((supplier) => supplier._id === supplierId)?.companyName ??
@@ -176,6 +184,12 @@ export class PurchaseFormComponent implements OnInit {
       next: (response) => {
         if (!response.result) {
           this.notification.error('Purchase not found.');
+          this.router.navigate(['/app/purchases']);
+          return;
+        }
+
+        if (response.result.status.trim().toUpperCase() === 'COMPLETED') {
+          this.loadingPurchase.set(false);
           this.router.navigate(['/app/purchases']);
           return;
         }
@@ -315,7 +329,7 @@ export class PurchaseFormComponent implements OnInit {
       sourceType: value.sourceType,
       supplierId: value.supplierId.trim() || null,
       status: value.status.trim(),
-      transactionDate: new Date(`${value.transactionDate}T00:00:00`),
+      transactionDate: new Date(`${value.transactionDate}T00:00:00.000Z`),
       totalCostAmount: this.totalCostAmount(),
       items: value.items.map((item) => ({
         ...(item._id.trim() ? { _id: item._id.trim() } : {}),
@@ -325,7 +339,7 @@ export class PurchaseFormComponent implements OnInit {
         quantity: item.quantity,
         costPrice: item.costPrice,
         retailPrice: item.retailPrice,
-        expiryDate: item.expiryDate ? new Date(`${item.expiryDate}T00:00:00`) : null,
+        expiryDate: item.expiryDate ? new Date(`${item.expiryDate}T00:00:00.000Z`) : null,
       })),
     };
     const request =
@@ -351,13 +365,16 @@ export class PurchaseFormComponent implements OnInit {
   }
 
   private patchPurchase(purchase: Purchase) {
-    this.form.patchValue({
-      invoiceNumber: purchase.invoiceNumber,
-      sourceType: purchase.sourceType,
-      supplierId: purchase.supplierId ?? '',
-      status: purchase.status,
-      transactionDate: this.dateInput(purchase.transactionDate),
-    }, { emitEvent: false });
+    this.form.patchValue(
+      {
+        invoiceNumber: purchase.invoiceNumber,
+        sourceType: purchase.sourceType,
+        supplierId: purchase.supplierId ?? '',
+        status: purchase.status,
+        transactionDate: this.dateInput(purchase.transactionDate),
+      },
+      { emitEvent: false },
+    );
     if (purchase.supplierId) {
       this.supplierSearch.setValue(this.supplierLabel(purchase.supplierId));
     }
@@ -496,7 +513,11 @@ export class PurchaseFormComponent implements OnInit {
       return '';
     }
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+    const pad = (part: number) => String(part).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   }
 
   private batchNumberFor(date: string) {

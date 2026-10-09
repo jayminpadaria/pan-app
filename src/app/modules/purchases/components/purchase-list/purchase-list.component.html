@@ -80,12 +80,23 @@
           <button
             mat-icon-button
             type="button"
+            [routerLink]="['/app/purchases', purchase._id, 'view']"
+            [attr.aria-label]="'View purchase ' + purchase.invoiceNumber"
+            [attr.title]="'View purchase ' + purchase.invoiceNumber"
+          >
+            <i class="bi bi-eye" aria-hidden="true"></i>
+          </button>
+          @if (!isCompleted(purchase)) {
+          <button
+            mat-icon-button
+            type="button"
             [routerLink]="['/app/purchases', purchase._id, 'edit']"
             [attr.aria-label]="'Edit purchase ' + purchase.invoiceNumber"
             [attr.title]="'Edit purchase ' + purchase.invoiceNumber"
           >
             <i class="bi bi-pencil" aria-hidden="true"></i>
           </button>
+          }
           <button
             mat-icon-button
             type="button"
