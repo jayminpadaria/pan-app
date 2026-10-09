@@ -1,10 +1,13 @@
 <div class="card shadow-sm border-0">
   <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-    <h4 class="mb-0">Create sale</h4>
+    <h4 class="mb-0">{{ isEdit() ? 'Edit sale' : 'Create sale' }}</h4>
     <button mat-stroked-button type="button" routerLink="/app/sales">Back to sales</button>
   </div>
 
   <div class="card-body">
+    @if (loadingSale()) {
+      <mat-progress-bar mode="indeterminate" />
+    } @else {
     <form [formGroup]="form" (ngSubmit)="saveSale()" novalidate>
       <div class="row g-3">
         <div class="col-md-4">
@@ -91,11 +94,13 @@
             color="primary"
             type="button"
             class="scan-button"
-            [disabled]="scanning() || !barcode.value.trim()"
+            [disabled]="scanning() || loadingItemDetails() || !barcode.value.trim()"
             (click)="scanBarcode()"
           >
             @if (scanning()) {
               Looking up...
+            } @else if (loadingItemDetails()) {
+              Loading sale items...
             } @else {
               <i class="bi bi-upc-scan me-1" aria-hidden="true"></i>
               Add item
@@ -230,9 +235,18 @@
           type="submit"
           [disabled]="saving() || scanning()"
         >
-          {{ saving() ? 'Saving...' : 'Complete sale' }}
+          {{
+            saving()
+              ? isEdit()
+                ? 'Saving...'
+                : 'Creating...'
+              : isEdit()
+                ? 'Save changes'
+                : 'Complete sale'
+          }}
         </button>
       </div>
     </form>
+    }
   </div>
 </div>

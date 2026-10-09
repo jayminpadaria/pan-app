@@ -1,0 +1,101 @@
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0">Sale details</h4>
+      @if (sale(); as record) {
+        <small class="text-muted">{{ record.orderNumber }}</small>
+      }
+    </div>
+    <button mat-stroked-button type="button" routerLink="/app/sales">Back to sales</button>
+  </div>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  } @else if (sale(); as record) {
+    <div class="card-body">
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+          <div class="detail-label">Order number</div>
+          <div class="detail-value">{{ record.orderNumber }}</div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="detail-label">Sale date</div>
+          <div class="detail-value">{{ record.salesDate | date: 'mediumDate' }}</div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="detail-label">Customer</div>
+          <div class="detail-value">{{ customerName() }}</div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="detail-label">Payment status</div>
+          <span
+            class="badge"
+            [class.text-bg-success]="record.paymentStatus.toUpperCase() === 'PAID'"
+            [class.text-bg-warning]="record.paymentStatus.toUpperCase() === 'UNPAID'"
+          >
+            {{ record.paymentStatus }}
+          </span>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Sale items</h5>
+        <span class="text-muted">{{ record.items.length }} item(s)</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead>
+            <tr>
+              <th scope="col">Product</th>
+              <th scope="col">Variant</th>
+              <th scope="col">Stock batch</th>
+              <th scope="col">Quantity</th>
+              <th scope="col">Cost at sale</th>
+              <th scope="col">Sold price</th>
+              <th scope="col">Discount</th>
+              <th scope="col">Line total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of record.items; track item._id ?? $index) {
+              <tr>
+                <td>{{ productName(item) }}</td>
+                <td>{{ variantLabel(item) }}</td>
+                <td class="text-break">{{ item.productStockId }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.costPriceAtSale | number: '1.2-2' }}</td>
+                <td>{{ item.soldPrice | number: '1.2-2' }}</td>
+                <td>{{ item.discountAmount | number: '1.2-2' }}</td>
+                <td class="fw-semibold">{{ lineTotal(item) | number: '1.2-2' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="text-center text-muted p-4">No sale items.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="row justify-content-end">
+        <div class="col-sm-6 col-lg-4">
+          <div class="total-card p-3 rounded-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal</span>
+              <strong>{{ record.subTotal | number: '1.2-2' }}</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Tax</span>
+              <strong>{{ record.taxAmount | number: '1.2-2' }}</strong>
+            </div>
+            <div class="d-flex justify-content-between border-top pt-2 fs-5">
+              <span>Total</span>
+              <strong>{{ record.grandTotal | number: '1.2-2' }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

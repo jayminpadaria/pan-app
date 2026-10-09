@@ -1,20 +1,24 @@
 import { Component, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Customer } from '../../../../shared/interfaces/customer.interface';
+import { Product } from '../../../../shared/interfaces/product.interface';
 import { StockLookupResponse } from '../../../../shared/interfaces/product-stock.interface';
 import { Sales, SalesItem } from '../../../../shared/interfaces/sales.interface';
 import { CustomersService } from '../../../../shared/services/customers.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
+import { ProductsService } from '../../../../shared/services/products.service';
 import { SalesService } from '../../../../shared/services/sales.service';
 
 interface SalesItemControls {
+  _id: FormControl<string>;
   productId: FormControl<string>;
   productVariantId: FormControl<string>;
   productStockId: FormControl<string>;
   productName: FormControl<string>;
   batchNumber: FormControl<string>;
   availableQty: FormControl<number>;
+  originalQuantity: FormControl<number>;
   quantity: FormControl<number>;
   costPriceAtSale: FormControl<number>;
   soldPrice: FormControl<number>;
@@ -42,18 +46,26 @@ const validLineDiscount: ValidatorFn = (control) => {
 })
 export class SalesFormComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder).nonNullable;
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly salesService = inject(SalesService);
+  private readonly productsService = inject(ProductsService);
   private readonly customersService = inject(CustomersService);
   private readonly notification = inject(NotificationService);
-  private readonly router = inject(Router);
 
   @ViewChild('barcodeInput') private barcodeInput?: ElementRef<HTMLInputElement>;
 
   readonly saving = signal(false);
   readonly scanning = signal(false);
+  readonly loadingSale = signal(false);
+  readonly loadingItemDetails = signal(false);
+  readonly isEdit = signal(false);
   readonly loadingCustomers = signal(false);
   readonly customers = signal<Customer[]>([]);
   readonly barcode = new FormControl('', { nonNullable: true });
+  private saleId: string | null = null;
+  private pendingItemDetails = 0;
+  private itemDetailsErrorNotified = false;
 
   readonly form = this.formBuilder.group({
     orderNumber: ['', Validators.required],
@@ -69,14 +81,46 @@ export class SalesFormComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.form.controls.orderNumber.setValue(this.generateOrderNumber());
     this.loadCustomers();
+    this.saleId = this.route.snapshot.paramMap.get('id');
+    if (!this.saleId) {
+      this.form.controls.orderNumber.setValue(this.generateOrderNumber());
+      return;
+    }
+
+    this.isEdit.set(true);
+    this.loadingSale.set(true);
+    this.salesService.getById(this.saleId).subscribe({
+      next: (response) => {
+        const sale = response.result;
+        if (!sale) {
+          this.notification.error('Sale not found.');
+          this.loadingSale.set(false);
+          this.router.navigate(['/app/sales']);
+          return;
+        }
+        if (sale.paymentStatus.trim().toUpperCase() === 'PAID') {
+          this.notification.error('Paid sales cannot be edited.');
+          this.loadingSale.set(false);
+          this.router.navigate(['/app/sales']);
+          return;
+        }
+
+        this.patchSale(sale);
+        this.loadingSale.set(false);
+      },
+      error: () => {
+        this.notification.error('Failed to load sale.');
+        this.loadingSale.set(false);
+        this.router.navigate(['/app/sales']);
+      },
+    });
   }
 
   scanBarcode(event?: Event) {
     event?.preventDefault();
     const barcode = this.barcode.value.trim();
-    if (this.scanning() || !barcode) {
+    if (this.scanning() || this.loadingItemDetails() || !barcode) {
       return;
     }
 
@@ -147,7 +191,7 @@ export class SalesFormComponent implements OnInit {
   }
 
   saveSale() {
-    if (this.form.invalid || this.scanning()) {
+    if (this.form.invalid || this.scanning() || this.loadingItemDetails()) {
       this.form.markAllAsTouched();
       return;
     }
@@ -157,6 +201,7 @@ export class SalesFormComponent implements OnInit {
       orderNumber: value.orderNumber.trim(),
       customerId: value.customerId || null,
       items: value.items.map((item): SalesItem => ({
+        ...(item._id ? { _id: item._id } : {}),
         productId: item.productId,
         productVariantId: item.productVariantId,
         productStockId: item.productStockId,
@@ -172,17 +217,137 @@ export class SalesFormComponent implements OnInit {
       salesDate: new Date(`${value.salesDate}T00:00:00.000Z`),
     };
 
+    const request =
+      this.isEdit() && this.saleId
+        ? this.salesService.update(this.saleId, sale)
+        : this.salesService.create(sale);
     this.saving.set(true);
-    this.salesService.create(sale).subscribe({
+    request.subscribe({
       next: () => {
-        this.notification.success('Sale created successfully.');
+        this.notification.success(
+          this.isEdit() ? 'Sale updated successfully.' : 'Sale created successfully.',
+        );
         this.router.navigate(['/app/sales']);
       },
       error: () => {
-        this.notification.error('Failed to create sale.');
+        this.notification.error(
+          this.isEdit() ? 'Failed to update sale.' : 'Failed to create sale.',
+        );
         this.saving.set(false);
       },
     });
+  }
+
+  private patchSale(sale: Sales) {
+    this.form.patchValue(
+      {
+        orderNumber: sale.orderNumber,
+        customerId: sale.customerId ?? '',
+        salesDate: this.dateInput(sale.salesDate),
+        paymentStatus: sale.paymentStatus.trim().toUpperCase(),
+        taxAmount: sale.taxAmount,
+      },
+      { emitEvent: false },
+    );
+
+    this.pendingItemDetails = sale.items.length;
+    this.loadingItemDetails.set(this.pendingItemDetails > 0);
+    sale.items.forEach((saleItem) => this.addExistingItem(saleItem));
+  }
+
+  private addExistingItem(saleItem: SalesItem) {
+    const item = this.formBuilder.group(
+      {
+        _id: [saleItem._id ?? ''],
+        productId: [saleItem.productId],
+        productVariantId: [saleItem.productVariantId],
+        productStockId: [saleItem.productStockId],
+        productName: [`${saleItem.productId} — ${saleItem.productVariantId}`],
+        batchNumber: [saleItem.productStockId],
+        availableQty: [saleItem.quantity],
+        originalQuantity: [saleItem.quantity],
+        quantity: [
+          saleItem.quantity,
+          [Validators.required, Validators.min(1), Validators.max(saleItem.quantity)],
+        ],
+        costPriceAtSale: [saleItem.costPriceAtSale],
+        soldPrice: [saleItem.soldPrice, [Validators.required, Validators.min(0)]],
+        discountAmount: [
+          saleItem.discountAmount,
+          [Validators.required, Validators.min(0)],
+        ],
+      },
+      { validators: validLineDiscount },
+    );
+    this.items.push(item);
+
+    this.productsService.getById(saleItem.productId).subscribe({
+      next: (response) => {
+        const product = response.result;
+        if (!product) {
+          this.notifyItemDetailsError();
+          this.finishItemDetailsLookup();
+          return;
+        }
+
+        const variant = product.variants?.find(
+          (candidate) => candidate._id === saleItem.productVariantId,
+        );
+        item.controls.productName.setValue(
+          variant ? `${product.name} — ${variant.sku}` : product.name,
+        );
+        if (!variant?.barcode) {
+          this.finishItemDetailsLookup();
+          return;
+        }
+
+        this.salesService.stock(variant.barcode).subscribe({
+          next: (stockResponse) => {
+            const batch = stockResponse.result?.stock.batches.find(
+              (candidate) => candidate._id === saleItem.productStockId,
+            );
+            if (batch) {
+              const availableQty =
+                saleItem.quantity +
+                (batch.isActive && !batch.isDeleted && !batch.isDeadStock
+                  ? Math.max(0, batch.availableQty)
+                  : 0);
+              item.controls.batchNumber.setValue(batch.batchNumber);
+              item.controls.availableQty.setValue(availableQty);
+              item.controls.quantity.setValidators([
+                Validators.required,
+                Validators.min(1),
+                Validators.max(availableQty),
+              ]);
+              item.controls.quantity.updateValueAndValidity({ emitEvent: false });
+            }
+            this.finishItemDetailsLookup();
+          },
+          error: () => {
+            this.notifyItemDetailsError();
+            this.finishItemDetailsLookup();
+          },
+        });
+      },
+      error: () => {
+        this.notifyItemDetailsError();
+        this.finishItemDetailsLookup();
+      },
+    });
+  }
+
+  private finishItemDetailsLookup() {
+    this.pendingItemDetails -= 1;
+    if (this.pendingItemDetails === 0) {
+      this.loadingItemDetails.set(false);
+    }
+  }
+
+  private notifyItemDetailsError() {
+    if (!this.itemDetailsErrorNotified) {
+      this.notification.error('Some saved product details could not be loaded.');
+      this.itemDetailsErrorNotified = true;
+    }
   }
 
   private addStockedVariant(lookup: StockLookupResponse) {
@@ -203,7 +368,10 @@ export class SalesFormComponent implements OnInit {
       const existing = this.items.controls.find(
         (item) => item.controls.productStockId.value === candidate._id,
       );
-      return !existing || existing.controls.quantity.value < candidate.availableQty;
+      return (
+        !existing ||
+        existing.controls.quantity.value < existing.controls.availableQty.value
+      );
     });
     if (!batch) {
       this.notification.error('No available stock batch was found for this barcode.');
@@ -222,12 +390,14 @@ export class SalesFormComponent implements OnInit {
 
     const item = this.formBuilder.group(
       {
+        _id: [''],
         productId: [product._id],
         productVariantId: [variant._id],
         productStockId: [batch._id],
         productName: [`${product.name} — ${variant.sku}`],
         batchNumber: [batch.batchNumber],
         availableQty: [batch.availableQty],
+        originalQuantity: [0],
         quantity: [1, [Validators.required, Validators.min(1), Validators.max(batch.availableQty)]],
         costPriceAtSale: [batch.costPrice],
         soldPrice: [batch.retailPrice, [Validators.required, Validators.min(0)]],
@@ -273,5 +443,14 @@ export class SalesFormComponent implements OnInit {
     return `SAL-${pad(now.getDate())}${pad(now.getMonth() + 1)}${now.getFullYear()}${pad(
       now.getHours(),
     )}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  }
+
+  private dateInput(value: Date | string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+    const pad = (part: number) => String(part).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   }
 }

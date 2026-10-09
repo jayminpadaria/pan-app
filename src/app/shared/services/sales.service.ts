@@ -16,8 +16,16 @@ export class SalesService {
     return this.http.post<ApiListResponseFormat<Sales>>(`${API_URL}/list`, request);
   }
 
+  getById(id: string) {
+    return this.http.get<ApiResponseFormat & { result?: Sales }>(`${API_URL}/${id}`);
+  }
+
   create(sale: Omit<Sales, '_id'>) {
     return this.http.post<ApiResponseFormat>(API_URL, sale);
+  }
+
+  update(id: string, sale: Omit<Sales, '_id'>) {
+    return this.http.put<ApiResponseFormat>(`${API_URL}/update/${id}`, sale);
   }
 
   stock(barcode: string) {

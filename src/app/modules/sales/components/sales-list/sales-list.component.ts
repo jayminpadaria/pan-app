@@ -53,6 +53,7 @@ export class SalesListComponent implements OnInit {
     'grandTotal',
     'paymentStatus',
     'salesDate',
+    'actions',
   ];
   readonly dataSource = new MatTableDataSource<Sale>([]);
   readonly search = new FormControl('', { nonNullable: true });
@@ -102,6 +103,10 @@ export class SalesListComponent implements OnInit {
     }
     const customer = this.customers().find((entry) => entry._id === sale.customerId);
     return customer ? `${customer.firstName} ${customer.lastName}` : sale.customerId;
+  }
+
+  isUnpaid(sale: Sale) {
+    return sale.paymentStatus.trim().toUpperCase() === 'UNPAID';
   }
 
   load() {
