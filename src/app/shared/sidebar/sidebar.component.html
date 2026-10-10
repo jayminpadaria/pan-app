@@ -26,9 +26,12 @@
         type="button"
         (click)="logout()"
         [attr.title]="isCollapsed ? 'Logout' : null"
-        class="list-group-item list-group-item-action bg-transparent text-white second-text fw-bold text-start"
+        [class.text-center]="isCollapsed"
+        [class.text-start]="!isCollapsed"
+        [attr.aria-label]="isCollapsed ? 'Logout' : null"
+        class="list-group-item list-group-item-action bg-transparent text-white second-text fw-bold"
       >
-        <i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i>
+        <i class="bi bi-box-arrow-right" [class.me-2]="!isCollapsed" aria-hidden="true"></i>
         <span *ngIf="!isCollapsed">Logout</span>
       </button>
     </div>

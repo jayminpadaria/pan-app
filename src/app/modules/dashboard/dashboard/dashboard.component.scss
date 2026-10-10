@@ -1,0 +1,250 @@
+.dashboard {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.summary-content {
+  min-width: 0;
+  width: 100%;
+}
+
+.metric-list {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #edf0f5;
+  color: #69768a;
+  font-size: 0.8rem;
+}
+
+.metric-list span {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.metric-list strong {
+  color: #344156;
+  font-weight: 600;
+  text-align: right;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.eyebrow {
+  color: #68758a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.dashboard-header h1 {
+  color: #202b3c;
+  font-size: clamp(1.55rem, 3vw, 2rem);
+  font-weight: 700;
+}
+
+.clock-card {
+  display: grid;
+  justify-items: end;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e8edf4;
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
+.clock-date {
+  color: #69768a;
+  font-size: 0.82rem;
+}
+
+.clock-time {
+  color: #202b3c;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.summary-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid #e8edf4;
+  border-radius: 0.9rem;
+  background: #fff;
+  box-shadow: 0 0.25rem 1rem rgba(33, 48, 71, 0.04);
+}
+
+.summary-icon {
+  display: grid;
+  flex: 0 0 2.8rem;
+  width: 2.8rem;
+  height: 2.8rem;
+  place-items: center;
+  border-radius: 0.8rem;
+  font-size: 1.15rem;
+}
+
+.sales-card .summary-icon {
+  color: #16845b;
+  background: #e7f6ef;
+}
+
+.purchase-card .summary-icon {
+  color: #546ed4;
+  background: #edf0ff;
+}
+
+.stock-card .summary-icon {
+  color: #b77719;
+  background: #fff4df;
+}
+
+.summary-label,
+.summary-detail {
+  margin: 0;
+  color: #69768a;
+  font-size: 0.84rem;
+}
+
+.summary-value {
+  margin: 0.28rem 0;
+  color: #202b3c;
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.content-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e8edf4;
+  border-radius: 0.9rem;
+  background: #fff;
+  box-shadow: 0 0.25rem 1rem rgba(33, 48, 71, 0.04);
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: #202b3c;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.section-heading p {
+  margin: 0.25rem 0 0;
+  color: #768195;
+  font-size: 0.82rem;
+}
+
+.count-badge {
+  flex-shrink: 0;
+  padding: 0.3rem 0.65rem;
+  border-radius: 2rem;
+  color: #526078;
+  background: #f0f3f8;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.stock-table {
+  font-size: 0.84rem;
+}
+
+.stock-table thead th {
+  padding: 0.7rem 1rem;
+  border-top: 1px solid #edf0f5;
+  border-bottom: 1px solid #edf0f5;
+  color: #7b8798;
+  background: #fafbfd;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stock-table tbody td {
+  padding: 0.8rem 1rem;
+  border-color: #f0f2f6;
+  white-space: nowrap;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  border-radius: 2rem;
+  color: #986919;
+  background: #fff3d8;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.status-paid {
+  color: #18794e;
+  background: #e4f5ec;
+}
+
+.empty-state {
+  padding: 1.6rem !important;
+  color: #8792a3;
+  text-align: center;
+}
+
+.quantity-pill {
+  display: inline-block;
+  min-width: 2.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 2rem;
+  color: #18794e;
+  background: #e4f5ec;
+  font-weight: 700;
+}
+
+.quantity-low {
+  color: #a54a20;
+  background: #fff0e8;
+}
+
+.stock-section {
+  padding-bottom: 0.25rem;
+}
+
+@media (max-width: 900px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 575px) {
+  .dashboard-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .clock-card {
+    justify-items: start;
+    width: 100%;
+  }
+}

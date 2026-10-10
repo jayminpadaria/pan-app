@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthRouteComponent } from './components/auth-route/auth-route.component';
 import { RootComponent } from './components/root/root.component';
-import { authGuard, guestGuard } from './shared/guards/auth.guard';
+import { authGuard, guestGuard, roleAccessGuard } from './shared/guards/auth.guard';
 
 const routes: Routes = [
   {
@@ -21,6 +21,7 @@ const routes: Routes = [
     path: 'app',
     component: AuthRouteComponent,
     canActivate: [authGuard],
+    canActivateChild: [roleAccessGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
@@ -45,6 +46,11 @@ const routes: Routes = [
       {
         path: 'sales',
         loadChildren: () => import('./modules/sales/sales.module').then((m) => m.SalesModule),
+      },
+      {
+        path: 'reports',
+        loadChildren: () =>
+          import('./modules/reports/reports.module').then((m) => m.ReportsModule),
       },
       {
         path: 'categories',

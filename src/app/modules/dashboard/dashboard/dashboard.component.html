@@ -1,0 +1,124 @@
+<main class="dashboard">
+  <header class="dashboard-header">
+    <div>
+      <p class="eyebrow mb-2">OVERVIEW</p>
+      <h1 class="mb-1">Good day</h1>
+      <p class="text-muted mb-0">Business summary for {{ now() | date: 'EEEE, MMMM d, y' }}.</p>
+    </div>
+    <div class="clock-card" aria-label="Current local date and time">
+      <span class="clock-date">{{ now() | date: 'EEEE, MMMM d, y' }}</span>
+      <span class="clock-time">{{ now() | date: 'h:mm:ss a' }}</span>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (dashboard(); as data) {
+    <section class="summary-grid" aria-label="Today's summary">
+      <article class="summary-card sales-card">
+        <div class="summary-icon"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></div>
+        <div class="summary-content">
+          <p class="summary-label">Today's sales</p>
+          <p class="summary-value">{{ data.sales.totalAmount | number: '1.2-2' }}</p>
+          <p class="summary-detail">
+            {{ data.sales.salesCount }} sales · {{ data.sales.unitsSold | number }} units sold
+          </p>
+          <div class="metric-list">
+            <span>Subtotal <strong>{{ data.sales.subTotal | number: '1.2-2' }}</strong></span>
+            <span>Tax <strong>{{ data.sales.taxAmount | number: '1.2-2' }}</strong></span>
+            <span>
+              Cost of goods sold
+              <strong>{{ data.sales.costOfGoodsSold | number: '1.2-2' }}</strong>
+            </span>
+          </div>
+        </div>
+      </article>
+
+      <article class="summary-card purchase-card">
+        <div class="summary-icon"><i class="bi bi-bag-check" aria-hidden="true"></i></div>
+        <div class="summary-content">
+          <p class="summary-label">Today's purchases</p>
+          <p class="summary-value">{{ data.purchases.totalAmount | number: '1.2-2' }}</p>
+          <p class="summary-detail">
+            {{ data.purchases.purchaseCount }} purchases ·
+            {{ data.purchases.unitsPurchased | number }} units purchased
+          </p>
+        </div>
+      </article>
+
+      <article class="summary-card stock-card">
+        <div class="summary-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></div>
+        <div class="summary-content">
+          <p class="summary-label">Available stock</p>
+          <p class="summary-value">{{ data.stock.totals.availableQty | number }}</p>
+          <p class="summary-detail">
+            {{ data.stock.totals.productCount }} products ·
+            {{ data.stock.totals.stockBatchCount }} batches
+          </p>
+          <div class="metric-list">
+            <span>Inventory cost value
+              <strong>{{ data.stock.totals.inventoryCostValue | number: '1.2-2' }}</strong>
+            </span>
+            <span>Damaged <strong>{{ data.stock.totals.damagedQty | number }}</strong></span>
+            <span>Expired <strong>{{ data.stock.totals.expiredQty | number }}</strong></span>
+            <span>Obsolete <strong>{{ data.stock.totals.obsoleteQty | number }}</strong></span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="content-card stock-section">
+      <div class="section-heading">
+        <div>
+          <h2>Stock by product</h2>
+          <p>Current inventory quantities and value by product variant</p>
+        </div>
+        <span class="count-badge">{{ data.stock.groups.length }} variants</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table stock-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Variant</th>
+              <th>SKU</th>
+              <th class="text-end">Available</th>
+              <th class="text-end">Damaged</th>
+              <th class="text-end">Expired</th>
+              <th class="text-end">Obsolete</th>
+              <th class="text-end">Batches</th>
+              <th class="text-end">Inventory value</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of data.stock.groups; track row.variantId) {
+              <tr>
+                <td class="fw-semibold">{{ row.productName }}</td>
+                <td>{{ row.variantName }}</td>
+                <td class="text-muted">{{ row.sku }}</td>
+                <td class="text-end">
+                  <span class="quantity-pill" [class.quantity-low]="row.availableQty <= 5">
+                    {{ row.availableQty | number }}
+                  </span>
+                </td>
+                <td class="text-end">{{ row.damagedQty | number }}</td>
+                <td class="text-end">{{ row.expiredQty | number }}</td>
+                <td class="text-end">{{ row.obsoleteQty | number }}</td>
+                <td class="text-end">{{ row.stockBatchCount | number }}</td>
+                <td class="text-end fw-semibold">
+                  {{ row.inventoryCostValue | number: '1.2-2' }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-state">No stock records found.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</main>

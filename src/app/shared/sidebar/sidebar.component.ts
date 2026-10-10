@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { allMenu } from '../config/app-menu';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -12,16 +13,10 @@ export class SidebarComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly menu = [
-    { label: 'Dashboard', link: '/app/dashboard', icon: 'bi-speedometer2' },
-    { label: 'Users', link: '/app/users', icon: 'bi-people' },
-    { label: 'Products', link: '/app/products', icon: 'bi-box-seam' },
-    { label: 'Purchases', link: '/app/purchases', icon: 'bi-receipt' },
-    { label: 'Sales', link: '/app/sales', icon: 'bi-cart-check' },
-    { label: 'Categories', link: '/app/categories', icon: 'bi-tags' },
-    { label: 'Suppliers', link: '/app/suppliers', icon: 'bi-truck' },
-    { label: 'Customers', link: '/app/customers', icon: 'bi-person-vcard' },
-  ];
+  private readonly role = this.auth.getUserIdentity()?.role?.trim().toLowerCase() ?? 'user';
+  readonly menu = allMenu.filter(
+    (item) => item.isEnabled && item.roles.includes(this.role),
+  );
 
   logout() {
     this.auth.logout();
