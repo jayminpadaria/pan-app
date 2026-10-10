@@ -58,7 +58,32 @@
       <ng-container matColumnDef="variants">
         <th mat-header-cell *matHeaderCellDef>Variants</th>
         <td mat-cell *matCellDef="let product" class="variant-list">
-          {{ variants(product) }}
+          @for (variant of product.variants ?? []; track variant._id ?? variant.sku) {
+            <div class="variant-entry">
+              <span>{{ variant.sku }} ({{ variant.weight }} {{ variant.unit }})</span>
+              @if (variant._id) {
+                <button
+                  mat-icon-button
+                  type="button"
+                  [disabled]="printingVariantId() !== null"
+                  (click)="printVariantLabel(product, variant._id, variant.sku)"
+                  [attr.aria-label]="'Print label for ' + product.name + ' ' + variant.sku"
+                  [attr.title]="
+                    printingVariantId() === variant._id ? 'Printing label...' : 'Print label'
+                  "
+                >
+                  <i
+                    class="bi"
+                    [class.bi-printer]="printingVariantId() !== variant._id"
+                    [class.bi-hourglass-split]="printingVariantId() === variant._id"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              }
+            </div>
+          } @empty {
+            <span>—</span>
+          }
         </td>
       </ng-container>
 

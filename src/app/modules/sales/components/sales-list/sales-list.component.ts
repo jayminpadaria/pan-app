@@ -62,6 +62,7 @@ export class SalesListComponent implements OnInit {
   readonly page = signal(1);
   readonly limit = signal(10);
   readonly loading = signal(false);
+  readonly printingSaleId = signal<string | null>(null);
   readonly sortHeader = signal(DEFAULT_SORT.header);
   readonly sortDirection = signal(DEFAULT_SORT.direction);
 
@@ -107,6 +108,24 @@ export class SalesListComponent implements OnInit {
 
   isUnpaid(sale: Sale) {
     return sale.paymentStatus.trim().toUpperCase() === 'UNPAID';
+  }
+
+  printSale(sale: Sale) {
+    if (this.printingSaleId() !== null) {
+      return;
+    }
+
+    this.printingSaleId.set(sale._id);
+    this.salesService.print(sale._id).subscribe({
+      next: () => {
+        this.notification.success('Sale sent to print.');
+        this.printingSaleId.set(null);
+      },
+      error: () => {
+        this.notification.error('Failed to print sale.');
+        this.printingSaleId.set(null);
+      },
+    });
   }
 
   load() {

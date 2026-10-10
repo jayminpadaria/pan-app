@@ -3,6 +3,7 @@ import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
@@ -15,6 +16,10 @@ import { ListFilter } from '../../../../shared/interfaces/list.interface';
 import { Product } from '../../../../shared/interfaces/product.interface';
 import { NotificationService } from '../../../../shared/services/notification.service';
 import { ProductsService } from '../../../../shared/services/products.service';
+import {
+  ProductLabelDialogComponent,
+  ProductLabelInput,
+} from './product-label-dialog.component';
 
 const DEFAULT_SORT = { header: 'name', direction: 'ASC' };
 
@@ -26,6 +31,7 @@ const DEFAULT_SORT = { header: 'name', direction: 'ASC' };
     ReactiveFormsModule,
     RouterModule,
     MatButtonModule,
+    MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatPaginatorModule,
@@ -40,6 +46,7 @@ export class ProductListComponent implements OnInit {
   private readonly productsService = inject(ProductsService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialog = inject(MatDialog);
 
   readonly displayedColumns = ['name', 'brand', 'categories', 'variants', 'actions'];
   readonly dataSource = new MatTableDataSource<Product>([]);
@@ -48,6 +55,7 @@ export class ProductListComponent implements OnInit {
   readonly page = signal(1);
   readonly limit = signal(10);
   readonly loading = signal(false);
+  readonly printingVariantId = signal<string | null>(null);
   readonly sortHeader = signal(DEFAULT_SORT.header);
   readonly sortDirection = signal(DEFAULT_SORT.direction);
 
@@ -86,12 +94,35 @@ export class ProductListComponent implements OnInit {
     return product.categoriesName?.join(', ') || '—';
   }
 
-  variants(product: Product) {
-    return (
-      product.variants
-        ?.map((variant) => `${variant.sku} (${variant.weight} ${variant.unit})`)
-        .join(', ') || '—'
-    );
+  printVariantLabel(product: Product, variantId: string, sku: string) {
+    if (this.printingVariantId() !== null) {
+      return;
+    }
+
+    this.dialog
+      .open(ProductLabelDialogComponent, {
+        width: 'min(420px, 95vw)',
+        maxWidth: '95vw',
+        data: { productName: product.name, sku },
+      })
+      .afterClosed()
+      .subscribe((label?: ProductLabelInput) => {
+        if (!label) {
+          return;
+        }
+
+        this.printingVariantId.set(variantId);
+        this.productsService.printVariantLabel(variantId, label).subscribe({
+          next: () => {
+            this.notification.success('Variant label sent to print.');
+            this.printingVariantId.set(null);
+          },
+          error: () => {
+            this.notification.error('Failed to print variant label.');
+            this.printingVariantId.set(null);
+          },
+        });
+      });
   }
 
   load() {

@@ -88,6 +88,21 @@
           <button
             mat-icon-button
             type="button"
+            [disabled]="printingSaleId() !== null"
+            (click)="printSale(sale)"
+            [attr.aria-label]="'Print sale ' + sale.orderNumber"
+            [attr.title]="printingSaleId() === sale._id ? 'Printing sale...' : 'Print sale'"
+          >
+            <i
+              class="bi"
+              [class.bi-printer]="printingSaleId() !== sale._id"
+              [class.bi-hourglass-split]="printingSaleId() === sale._id"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
             [routerLink]="['/app/sales', sale._id, 'view']"
             [attr.aria-label]="'View sale ' + sale.orderNumber"
             [attr.title]="'View sale ' + sale.orderNumber"

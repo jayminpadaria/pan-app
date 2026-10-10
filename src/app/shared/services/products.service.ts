@@ -50,4 +50,14 @@ export class ProductsService {
   removeVariant(id: string, variantId: string) {
     return this.http.delete<ApiResponseFormat>(`${API_URL}/${id}/remove/variant/${variantId}`);
   }
+
+  printVariantLabel(
+    variantId: string,
+    label: { batchNumber: string; mfdDate: string },
+  ) {
+    return this.http.post<ApiResponseFormat>(
+      `${API_URL}/variants/${variantId}/print-label`,
+      label,
+    );
+  }
 }

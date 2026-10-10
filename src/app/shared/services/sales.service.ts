@@ -28,6 +28,10 @@ export class SalesService {
     return this.http.put<ApiResponseFormat>(`${API_URL}/update/${id}`, sale);
   }
 
+  print(id: string) {
+    return this.http.post<ApiResponseFormat>(`${API_URL}/${id}/print`, null);
+  }
+
   stock(barcode: string) {
     return this.http.get<ApiResponseFormat & { result?: StockLookupResponse }>(
       `${API_URL}/stock-lookup`,

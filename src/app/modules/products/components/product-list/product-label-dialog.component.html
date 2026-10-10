@@ -1,0 +1,34 @@
+<h2 mat-dialog-title>Print variant label</h2>
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <div mat-dialog-content class="row g-3">
+    <p class="mb-0">{{ data.productName }} — {{ data.sku }}</p>
+
+    <div class="col-12">
+      <label for="label-batch-number" class="form-label">Batch number</label>
+      <input
+        id="label-batch-number"
+        class="form-control"
+        formControlName="batchNumber"
+        [class.is-invalid]="isInvalid('batchNumber')"
+      />
+      <div class="invalid-feedback">Batch number is required.</div>
+    </div>
+
+    <div class="col-12">
+      <label for="label-mfd-date" class="form-label">Manufacturing date</label>
+      <input
+        id="label-mfd-date"
+        type="date"
+        class="form-control"
+        formControlName="mfdDate"
+        [class.is-invalid]="isInvalid('mfdDate')"
+      />
+      <div class="invalid-feedback">Manufacturing date is required.</div>
+    </div>
+  </div>
+
+  <div mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-flat-button color="primary" type="submit">Print label</button>
+  </div>
+</form>
