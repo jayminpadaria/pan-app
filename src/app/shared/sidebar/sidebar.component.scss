@@ -24,6 +24,22 @@
     width: 100%;
 }
 
+.page-brand {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    background: #fcf8f3;
+}
+
+.page-brand img {
+    display: block;
+    width: 100%;
+    height: 160px;
+    object-fit: contain;
+}
+
 .list-group-item {
     border: none;
     padding: 20px 30px;

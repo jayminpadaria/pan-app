@@ -55,6 +55,13 @@
         <td mat-cell *matCellDef="let product">{{ categories(product) }}</td>
       </ng-container>
 
+      <ng-container matColumnDef="variants">
+        <th mat-header-cell *matHeaderCellDef>Variants</th>
+        <td mat-cell *matCellDef="let product" class="variant-list">
+          {{ variants(product) }}
+        </td>
+      </ng-container>
+
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef>Actions</th>
         <td mat-cell *matCellDef="let product">

@@ -7,6 +7,7 @@ export interface Sales {
   taxAmount: number;
   grandTotal: number;
   paymentStatus: string;
+  paymentMethod?: 'CASH' | 'ONLINE';
   salesDate: Date;
 }
 

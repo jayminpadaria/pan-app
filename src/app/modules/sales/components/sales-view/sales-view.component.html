@@ -36,6 +36,18 @@
             {{ record.paymentStatus }}
           </span>
         </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="detail-label">Payment method</div>
+          <div class="detail-value">
+            {{
+              record.paymentMethod === 'CASH'
+                ? 'Cash (offline)'
+                : record.paymentMethod === 'ONLINE'
+                  ? 'Online'
+                  : 'Not recorded'
+            }}
+          </div>
+        </div>
       </div>
 
       <div class="d-flex justify-content-between align-items-center mb-3">

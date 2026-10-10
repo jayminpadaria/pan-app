@@ -1,4 +1,15 @@
-import { Component, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  ElementRef,
+  inject,
+  Injector,
+  OnInit,
+  QueryList,
+  signal,
+  ViewChild,
+  ViewChildren,
+} from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
@@ -56,8 +67,10 @@ export class SalesFormComponent implements OnInit {
   private readonly customersService = inject(CustomersService);
   private readonly dialog = inject(MatDialog);
   private readonly notification = inject(NotificationService);
+  private readonly injector = inject(Injector);
 
   @ViewChild('barcodeInput') private barcodeInput?: ElementRef<HTMLInputElement>;
+  @ViewChildren('quantityInput') private quantityInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
   readonly saving = signal(false);
   readonly scanning = signal(false);
@@ -77,6 +90,7 @@ export class SalesFormComponent implements OnInit {
     customerId: [''],
     salesDate: [today(), Validators.required],
     paymentStatus: ['UNPAID', Validators.required],
+    paymentMethod: this.formBuilder.control<'CASH' | 'ONLINE'>('CASH', Validators.required),
     taxAmount: [0, [Validators.required, Validators.min(0)]],
     items: this.formBuilder.array<FormGroup<SalesItemControls>>([], Validators.minLength(1)),
   });
@@ -274,6 +288,7 @@ export class SalesFormComponent implements OnInit {
       taxAmount: value.taxAmount,
       grandTotal: this.grandTotal(),
       paymentStatus: value.paymentStatus,
+      ...(value.paymentStatus === 'PAID' ? { paymentMethod: value.paymentMethod } : {}),
       salesDate: new Date(`${value.salesDate}T00:00:00.000Z`),
     };
 
@@ -304,6 +319,7 @@ export class SalesFormComponent implements OnInit {
         customerId: sale.customerId ?? '',
         salesDate: this.dateInput(sale.salesDate),
         paymentStatus: sale.paymentStatus.trim().toUpperCase(),
+        paymentMethod: sale.paymentMethod ?? 'CASH',
         taxAmount: sale.taxAmount,
       },
       { emitEvent: false },
@@ -432,6 +448,7 @@ export class SalesFormComponent implements OnInit {
       const nextQuantity = existingItem.controls.quantity.value + 1;
       existingItem.controls.quantity.setValue(nextQuantity);
       existingItem.controls.quantity.markAsDirty();
+      this.focusQuantityInput(this.items.controls.indexOf(existingItem));
       return;
     }
 
@@ -453,6 +470,13 @@ export class SalesFormComponent implements OnInit {
       { validators: validLineDiscount },
     );
     this.items.push(item);
+    this.focusQuantityInput(this.items.length - 1);
+  }
+
+  private focusQuantityInput(index: number) {
+    afterNextRender(() => this.quantityInputs.get(index)?.nativeElement.focus(), {
+      injector: this.injector,
+    });
   }
 
   private finishScan() {
@@ -508,7 +532,10 @@ export class SalesFormComponent implements OnInit {
     });
   }
 
-  private refreshCustomersAndSelect(customerInput: CustomerInput, createdCustomer: Customer | null) {
+  private refreshCustomersAndSelect(
+    customerInput: CustomerInput,
+    createdCustomer: Customer | null,
+  ) {
     this.customersService
       .getAll({
         filterList: [],
@@ -533,11 +560,11 @@ export class SalesFormComponent implements OnInit {
           const customerFromList =
             customers.find((customer) => customer._id === createdCustomer?._id) ??
             customers.find(
-            (customer) =>
-              customer.firstName.trim().toLowerCase() === customerInput.firstName.toLowerCase() &&
-              customer.lastName.trim().toLowerCase() === customerInput.lastName.toLowerCase() &&
-              customer.phone.trim() === customerInput.phone &&
-              customer.email.trim().toLowerCase() === customerInput.email.toLowerCase(),
+              (customer) =>
+                customer.firstName.trim().toLowerCase() === customerInput.firstName.toLowerCase() &&
+                customer.lastName.trim().toLowerCase() === customerInput.lastName.toLowerCase() &&
+                customer.phone.trim() === customerInput.phone &&
+                customer.email.trim().toLowerCase() === customerInput.email.toLowerCase(),
             );
           const selectedCustomer = customerFromList ?? createdCustomer;
           if (!selectedCustomer) {

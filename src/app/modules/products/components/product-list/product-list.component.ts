@@ -41,7 +41,7 @@ export class ProductListComponent implements OnInit {
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly displayedColumns = ['name', 'brand', 'categories', 'actions'];
+  readonly displayedColumns = ['name', 'brand', 'categories', 'variants', 'actions'];
   readonly dataSource = new MatTableDataSource<Product>([]);
   readonly search = new FormControl('', { nonNullable: true });
   readonly total = signal(0);
@@ -84,6 +84,14 @@ export class ProductListComponent implements OnInit {
 
   categories(product: Product) {
     return product.categoriesName?.join(', ') || '—';
+  }
+
+  variants(product: Product) {
+    return (
+      product.variants
+        ?.map((variant) => `${variant.sku} (${variant.weight} ${variant.unit})`)
+        .join(', ') || '—'
+    );
   }
 
   load() {
