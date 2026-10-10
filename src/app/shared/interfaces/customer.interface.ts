@@ -4,6 +4,7 @@ export interface Customer {
   lastName: string;
   email: string;
   phone: string;
+  isDefaultWalking?: boolean;
   isActive?: boolean;
   isDeleted?: boolean;
 }

@@ -1,6 +1,6 @@
 export interface Sales {
   _id: string;
-  orderNumber: string;
+  orderNumber?: string;
   customerId?: string | null;
   items: SalesItem[];
   subTotal: number;

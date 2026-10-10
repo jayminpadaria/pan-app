@@ -8,245 +8,266 @@
     @if (loadingSale()) {
       <mat-progress-bar mode="indeterminate" />
     } @else {
-    <form [formGroup]="form" (ngSubmit)="saveSale()" novalidate>
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label for="orderNumber" class="form-label">Order number</label>
-          <input
-            id="orderNumber"
-            class="form-control"
-            formControlName="orderNumber"
-            [class.is-invalid]="isInvalid('orderNumber')"
-          />
-          <div class="invalid-feedback">Order number is required.</div>
-        </div>
+      <form [formGroup]="form" (ngSubmit)="saveSale()" novalidate>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label for="salesDate" class="form-label">Sale date</label>
+            <input
+              id="salesDate"
+              type="date"
+              class="form-control"
+              formControlName="salesDate"
+              [class.is-invalid]="isInvalid('salesDate')"
+            />
+            <div class="invalid-feedback">Sale date is required.</div>
+          </div>
 
-        <div class="col-md-4">
-          <label for="salesDate" class="form-label">Sale date</label>
-          <input
-            id="salesDate"
-            type="date"
-            class="form-control"
-            formControlName="salesDate"
-            [class.is-invalid]="isInvalid('salesDate')"
-          />
-          <div class="invalid-feedback">Sale date is required.</div>
-        </div>
-
-        <div class="col-md-4">
-          <label for="customerId" class="form-label">Customer</label>
-          <select id="customerId" class="form-select" formControlName="customerId">
-            <option value="">Walk-in customer</option>
-            @for (customer of customers(); track customer._id) {
-              <option [value]="customer._id">
-                {{ customer.firstName }} {{ customer.lastName }} — {{ customer.phone }}
-              </option>
+          <div class="col-md-4">
+            <label for="customerId" class="form-label">Customer</label>
+            <div class="d-flex gap-2">
+              <input
+                id="customerId"
+                type="search"
+                class="form-control"
+                placeholder="Search customer by name or phone"
+                autocomplete="off"
+                [formControl]="customerSearch"
+                [matAutocomplete]="customerAutocomplete"
+                (input)="onCustomerSearchInput()"
+              />
+              <mat-autocomplete
+                #customerAutocomplete="matAutocomplete"
+                (optionSelected)="selectCustomer($event)"
+              >
+                <mat-option value="">Walk-in customer</mat-option>
+                @for (customer of filteredCustomers(); track customer._id) {
+                  <mat-option [value]="customer._id">
+                    {{ customer.firstName }} {{ customer.lastName }}
+                    @if (customer.phone) {
+                      — {{ customer.phone }}
+                    }
+                  </mat-option>
+                } @empty {
+                  @if (customerSearch.value.trim()) {
+                    <mat-option disabled>No matching customers found</mat-option>
+                  }
+                }
+              </mat-autocomplete>
+              <button
+                mat-stroked-button
+                type="button"
+                class="flex-shrink-0"
+                [disabled]="loadingCustomers() || creatingCustomer()"
+                (click)="addCustomer()"
+              >
+                <i class="bi bi-person-plus me-1" aria-hidden="true"></i>
+                Add new
+              </button>
+            </div>
+            @if (loadingCustomers()) {
+              <small class="text-muted">Loading customers...</small>
             }
-          </select>
-          @if (loadingCustomers()) {
-            <small class="text-muted">Loading customers...</small>
+            @if (creatingCustomer()) {
+              <small class="text-muted">Adding customer...</small>
+            }
+          </div>
+
+          <div class="col-md-4">
+            <label for="paymentStatus" class="form-label">Payment status</label>
+            <select
+              id="paymentStatus"
+              class="form-select"
+              formControlName="paymentStatus"
+              [class.is-invalid]="isInvalid('paymentStatus')"
+            >
+              <option value="UNPAID">Unpaid</option>
+              <option value="PAID">Paid</option>
+            </select>
+            <div class="invalid-feedback">Payment status is required.</div>
+          </div>
+        </div>
+
+        <section class="scanner-panel mt-4 p-3 p-md-4 rounded-3" aria-labelledby="scanner-heading">
+          <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
+            <div>
+              <h5 id="scanner-heading" class="mb-1">Add items with a barcode scanner</h5>
+              <p class="text-muted mb-0">
+                Click the barcode field and scan a product. Scanning the same item again adds one.
+              </p>
+            </div>
+            <span class="scanner-hint align-self-md-center">
+              <i class="bi bi-upc-scan me-1" aria-hidden="true"></i>
+              Scanner ready
+            </span>
+          </div>
+
+          <div class="d-flex flex-column flex-sm-row gap-2">
+            <input
+              #barcodeInput
+              id="saleBarcode"
+              type="text"
+              class="form-control form-control-lg"
+              placeholder="Scan or enter barcode"
+              aria-label="Scan or enter product barcode"
+              autocomplete="off"
+              [formControl]="barcode"
+              (keydown.enter)="scanBarcode($event)"
+            />
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              class="scan-button"
+              [disabled]="scanning() || loadingItemDetails() || !barcode.value.trim()"
+              (click)="scanBarcode()"
+            >
+              @if (scanning()) {
+                Looking up...
+              } @else if (loadingItemDetails()) {
+                Loading sale items...
+              } @else {
+                <i class="bi bi-upc-scan me-1" aria-hidden="true"></i>
+                Add item
+              }
+            </button>
+          </div>
+        </section>
+
+        <div class="mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Sale items</h5>
+            <span class="text-muted">{{ items.length }} item(s)</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+              <thead>
+                <tr>
+                  <th scope="col">Product / variant</th>
+                  <th scope="col">Batch</th>
+                  <th scope="col">Available</th>
+                  <th scope="col">Qty</th>
+                  <th scope="col">Price</th>
+                  <th scope="col">Discount</th>
+                  <th scope="col">Line total</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody formArrayName="items">
+                @for (item of items.controls; track item; let i = $index) {
+                  <tr [formGroupName]="i">
+                    <td class="fw-semibold">{{ item.controls.productName.value }}</td>
+                    <td>{{ item.controls.batchNumber.value }}</td>
+                    <td>{{ item.controls.availableQty.value }}</td>
+                    <td class="quantity-cell">
+                      <input
+                        type="number"
+                        min="1"
+                        [max]="item.controls.availableQty.value"
+                        class="form-control"
+                        formControlName="quantity"
+                        [class.is-invalid]="itemInvalid(item, 'quantity')"
+                        [attr.aria-label]="'Quantity for ' + item.controls.productName.value"
+                      />
+                      <div class="invalid-feedback">Enter an available quantity.</div>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        class="form-control price-cell"
+                        formControlName="soldPrice"
+                        [class.is-invalid]="itemInvalid(item, 'soldPrice')"
+                        [attr.aria-label]="'Price for ' + item.controls.productName.value"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        class="form-control price-cell"
+                        formControlName="discountAmount"
+                        [class.is-invalid]="
+                          itemInvalid(item, 'discountAmount') || discountInvalid(item)
+                        "
+                        [attr.aria-label]="'Line discount for ' + item.controls.productName.value"
+                      />
+                      @if (discountInvalid(item)) {
+                        <small class="text-danger">Discount exceeds the line total.</small>
+                      }
+                    </td>
+                    <td class="text-nowrap fw-semibold">{{ lineTotal(item) | number: '1.2-2' }}</td>
+                    <td>
+                      <button
+                        mat-button
+                        type="button"
+                        color="warn"
+                        [attr.aria-label]="'Remove ' + item.controls.productName.value"
+                        (click)="removeItem(i)"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="8" class="text-center text-muted p-4">
+                      No items yet. Scan a product barcode to get started.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (items.invalid && items.touched) {
+            <div class="text-danger small">Add at least one item before saving.</div>
           }
         </div>
 
-        <div class="col-md-4">
-          <label for="paymentStatus" class="form-label">Payment status</label>
-          <select
-            id="paymentStatus"
-            class="form-select"
-            formControlName="paymentStatus"
-            [class.is-invalid]="isInvalid('paymentStatus')"
-          >
-            <option value="UNPAID">Unpaid</option>
-            <option value="PAID">Paid</option>
-          </select>
-          <div class="invalid-feedback">Payment status is required.</div>
-        </div>
-      </div>
-
-      <section class="scanner-panel mt-4 p-3 p-md-4 rounded-3" aria-labelledby="scanner-heading">
-        <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
-          <div>
-            <h5 id="scanner-heading" class="mb-1">Add items with a barcode scanner</h5>
-            <p class="text-muted mb-0">
-              Click the barcode field and scan a product. Scanning the same item again adds one.
-            </p>
+        <div class="row justify-content-end g-3 mt-2">
+          <div class="col-sm-6 col-lg-4">
+            <label for="taxAmount" class="form-label">Tax amount</label>
+            <input
+              id="taxAmount"
+              type="number"
+              min="0"
+              step="0.01"
+              class="form-control"
+              formControlName="taxAmount"
+              [class.is-invalid]="isInvalid('taxAmount')"
+            />
+            <div class="invalid-feedback">Tax must be zero or greater.</div>
           </div>
-          <span class="scanner-hint align-self-md-center">
-            <i class="bi bi-upc-scan me-1" aria-hidden="true"></i>
-            Scanner ready
-          </span>
+          <div class="col-12 col-lg-4">
+            <div class="total-card p-3 rounded-3">
+              <div class="d-flex justify-content-between mb-2">
+                <span>Subtotal</span>
+                <strong>{{ subTotal() | number: '1.2-2' }}</strong>
+              </div>
+              <div class="d-flex justify-content-between border-top pt-2 fs-5">
+                <span>Total</span>
+                <strong>{{ grandTotal() | number: '1.2-2' }}</strong>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="d-flex flex-column flex-sm-row gap-2">
-          <input
-            #barcodeInput
-            id="saleBarcode"
-            type="text"
-            class="form-control form-control-lg"
-            placeholder="Scan or enter barcode"
-            aria-label="Scan or enter product barcode"
-            autocomplete="off"
-            [formControl]="barcode"
-            (keydown.enter)="scanBarcode($event)"
-          />
-          <button
-            mat-flat-button
-            color="primary"
-            type="button"
-            class="scan-button"
-            [disabled]="scanning() || loadingItemDetails() || !barcode.value.trim()"
-            (click)="scanBarcode()"
-          >
-            @if (scanning()) {
-              Looking up...
-            } @else if (loadingItemDetails()) {
-              Loading sale items...
-            } @else {
-              <i class="bi bi-upc-scan me-1" aria-hidden="true"></i>
-              Add item
-            }
+        <div class="mt-4 d-flex justify-content-end">
+          <button mat-flat-button color="primary" type="submit" [disabled]="saving() || scanning()">
+            {{
+              saving()
+                ? isEdit()
+                  ? 'Saving...'
+                  : 'Creating...'
+                : isEdit()
+                  ? 'Save changes'
+                  : 'Complete sale'
+            }}
           </button>
         </div>
-      </section>
-
-      <div class="mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">Sale items</h5>
-          <span class="text-muted">{{ items.length }} item(s)</span>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-bordered align-middle">
-            <thead>
-              <tr>
-                <th scope="col">Product / variant</th>
-                <th scope="col">Batch</th>
-                <th scope="col">Available</th>
-                <th scope="col">Qty</th>
-                <th scope="col">Price</th>
-                <th scope="col">Discount</th>
-                <th scope="col">Line total</th>
-                <th scope="col">Action</th>
-              </tr>
-            </thead>
-            <tbody formArrayName="items">
-              @for (item of items.controls; track item; let i = $index) {
-                <tr [formGroupName]="i">
-                  <td class="fw-semibold">{{ item.controls.productName.value }}</td>
-                  <td>{{ item.controls.batchNumber.value }}</td>
-                  <td>{{ item.controls.availableQty.value }}</td>
-                  <td class="quantity-cell">
-                    <input
-                      type="number"
-                      min="1"
-                      [max]="item.controls.availableQty.value"
-                      class="form-control"
-                      formControlName="quantity"
-                      [class.is-invalid]="itemInvalid(item, 'quantity')"
-                      [attr.aria-label]="'Quantity for ' + item.controls.productName.value"
-                    />
-                    <div class="invalid-feedback">Enter an available quantity.</div>
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      class="form-control price-cell"
-                      formControlName="soldPrice"
-                      [class.is-invalid]="itemInvalid(item, 'soldPrice')"
-                      [attr.aria-label]="'Price for ' + item.controls.productName.value"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      class="form-control price-cell"
-                      formControlName="discountAmount"
-                      [class.is-invalid]="itemInvalid(item, 'discountAmount') || discountInvalid(item)"
-                      [attr.aria-label]="'Line discount for ' + item.controls.productName.value"
-                    />
-                    @if (discountInvalid(item)) {
-                      <small class="text-danger">Discount exceeds the line total.</small>
-                    }
-                  </td>
-                  <td class="text-nowrap fw-semibold">{{ lineTotal(item) | number: '1.2-2' }}</td>
-                  <td>
-                    <button
-                      mat-button
-                      type="button"
-                      color="warn"
-                      [attr.aria-label]="'Remove ' + item.controls.productName.value"
-                      (click)="removeItem(i)"
-                    >
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="8" class="text-center text-muted p-4">
-                    No items yet. Scan a product barcode to get started.
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-        @if (items.invalid && items.touched) {
-          <div class="text-danger small">Add at least one item before saving.</div>
-        }
-      </div>
-
-      <div class="row justify-content-end g-3 mt-2">
-        <div class="col-sm-6 col-lg-4">
-          <label for="taxAmount" class="form-label">Tax amount</label>
-          <input
-            id="taxAmount"
-            type="number"
-            min="0"
-            step="0.01"
-            class="form-control"
-            formControlName="taxAmount"
-            [class.is-invalid]="isInvalid('taxAmount')"
-          />
-          <div class="invalid-feedback">Tax must be zero or greater.</div>
-        </div>
-        <div class="col-12 col-lg-4">
-          <div class="total-card p-3 rounded-3">
-            <div class="d-flex justify-content-between mb-2">
-              <span>Subtotal</span>
-              <strong>{{ subTotal() | number: '1.2-2' }}</strong>
-            </div>
-            <div class="d-flex justify-content-between border-top pt-2 fs-5">
-              <span>Total</span>
-              <strong>{{ grandTotal() | number: '1.2-2' }}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-4 d-flex justify-content-end">
-        <button
-          mat-flat-button
-          color="primary"
-          type="submit"
-          [disabled]="saving() || scanning()"
-        >
-          {{
-            saving()
-              ? isEdit()
-                ? 'Saving...'
-                : 'Creating...'
-              : isEdit()
-                ? 'Save changes'
-                : 'Complete sale'
-          }}
-        </button>
-      </div>
-    </form>
+      </form>
     }
   </div>
 </div>
