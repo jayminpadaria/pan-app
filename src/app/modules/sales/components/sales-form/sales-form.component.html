@@ -40,7 +40,7 @@
                 #customerAutocomplete="matAutocomplete"
                 (optionSelected)="selectCustomer($event)"
               >
-                <mat-option value="">Walk-in customer</mat-option>
+                <!-- <mat-option value="">No customer</mat-option> -->
                 @for (customer of filteredCustomers(); track customer._id) {
                   <mat-option [value]="customer._id">
                     {{ customer.firstName }} {{ customer.lastName }}
@@ -146,7 +146,9 @@
               color="primary"
               type="button"
               class="scan-button"
-              [disabled]="loadingSale() || scanning() || loadingItemDetails() || !barcode.value.trim()"
+              [disabled]="
+                loadingSale() || scanning() || loadingItemDetails() || !barcode.value.trim()
+              "
               (click)="scanBarcode()"
             >
               @if (scanning()) {
@@ -204,7 +206,9 @@
                             mat-icon-button
                             class="inline-action save-action"
                             type="button"
-                            [attr.aria-label]="'Save quantity for ' + item.controls.productName.value"
+                            [attr.aria-label]="
+                              'Save quantity for ' + item.controls.productName.value
+                            "
                             title="Save quantity"
                             (click)="saveInlineField(item, 'quantity')"
                           >
@@ -221,7 +225,9 @@
                             mat-icon-button
                             class="inline-action edit-action"
                             type="button"
-                            [attr.aria-label]="'Edit quantity for ' + item.controls.productName.value"
+                            [attr.aria-label]="
+                              'Edit quantity for ' + item.controls.productName.value
+                            "
                             title="Edit quantity"
                             (click)="editInlineField(item, 'quantity')"
                           >
@@ -245,13 +251,17 @@
                             [class.is-invalid]="
                               itemInvalid(item, 'discountAmount') || discountInvalid(item)
                             "
-                            [attr.aria-label]="'Line discount for ' + item.controls.productName.value"
+                            [attr.aria-label]="
+                              'Line discount for ' + item.controls.productName.value
+                            "
                           />
                           <button
                             mat-icon-button
                             class="inline-action save-action"
                             type="button"
-                            [attr.aria-label]="'Save discount for ' + item.controls.productName.value"
+                            [attr.aria-label]="
+                              'Save discount for ' + item.controls.productName.value
+                            "
                             title="Save discount"
                             (click)="saveInlineField(item, 'discountAmount')"
                           >
@@ -265,7 +275,9 @@
                             mat-icon-button
                             class="inline-action edit-action"
                             type="button"
-                            [attr.aria-label]="'Edit discount for ' + item.controls.productName.value"
+                            [attr.aria-label]="
+                              'Edit discount for ' + item.controls.productName.value
+                            "
                             title="Edit discount"
                             (click)="editInlineField(item, 'discountAmount')"
                           >

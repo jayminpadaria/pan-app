@@ -591,15 +591,15 @@ export class SalesFormComponent implements OnInit {
               ? [...customers, selectedCustomer]
               : customers,
           );
-          if (!this.saleId) {
-            const defaultWalkingCustomer = customers.find(
-              (customer) => customer.isDefaultWalking === true,
-            );
-            if (defaultWalkingCustomer) {
-              this.form.controls.customerId.setValue(defaultWalkingCustomer._id);
-            }
+          const defaultWalkingCustomer = !this.saleId
+            ? customers.find((customer) => customer.isDefaultWalking === true)
+            : undefined;
+          if (defaultWalkingCustomer) {
+            this.form.controls.customerId.setValue(defaultWalkingCustomer._id);
+            this.customerSearch.setValue(this.customerLabel(defaultWalkingCustomer));
+          } else {
+            this.syncCustomerSearchFromSelection();
           }
-          this.syncCustomerSearchFromSelection();
           this.loadingCustomers.set(false);
         },
         error: () => {
@@ -613,7 +613,7 @@ export class SalesFormComponent implements OnInit {
     this.creatingCustomer.set(true);
     this.customersService.create(customerInput).subscribe({
       next: (response) => {
-        const customer = this.customerFromResponse(response.result);
+        const customer = this.customerFromResponse(response.result, customerInput);
         this.refreshCustomersAndSelect(customerInput, customer);
       },
       error: () => {
@@ -687,7 +687,10 @@ export class SalesFormComponent implements OnInit {
       });
   }
 
-  private customerFromResponse(result: unknown): Customer | null {
+  private customerFromResponse(result: unknown, customerInput: CustomerInput): Customer | null {
+    if (typeof result === 'string' && result) {
+      return { _id: result, ...customerInput };
+    }
     if (typeof result !== 'object' || result === null) {
       return null;
     }
@@ -714,6 +717,9 @@ export class SalesFormComponent implements OnInit {
         phone: candidate.phone,
         email: candidate.email,
       };
+    }
+    if ('_id' in candidate && typeof candidate._id === 'string' && candidate._id) {
+      return { _id: candidate._id, ...customerInput };
     }
     return null;
   }
