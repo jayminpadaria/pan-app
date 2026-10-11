@@ -53,7 +53,13 @@ export class ProductsService {
 
   printVariantLabel(
     variantId: string,
-    label: { batchNumber: string; mfdDate: string },
+    label: {
+      batchNumber: string;
+      mfdDate: string;
+      expDate: string;
+      mrp: number;
+      printQty: number;
+    },
   ) {
     return this.http.post<ApiResponseFormat>(
       `${API_URL}/variants/${variantId}/print-label`,

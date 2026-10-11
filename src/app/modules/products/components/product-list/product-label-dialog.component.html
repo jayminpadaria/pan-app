@@ -25,6 +25,46 @@
       />
       <div class="invalid-feedback">Manufacturing date is required.</div>
     </div>
+
+    <div class="col-12">
+      <label for="label-exp-date" class="form-label">Expiry date</label>
+      <input
+        id="label-exp-date"
+        type="date"
+        class="form-control"
+        formControlName="expDate"
+        [class.is-invalid]="isInvalid('expDate')"
+      />
+      <div class="invalid-feedback">Expiry date is required.</div>
+    </div>
+
+    <div class="col-12">
+      <label for="label-mrp" class="form-label">MRP</label>
+      <input
+        id="label-mrp"
+        type="number"
+        min="0"
+        step="0.01"
+        class="form-control"
+        formControlName="mrp"
+        [class.is-invalid]="isInvalid('mrp')"
+      />
+      <div class="invalid-feedback">MRP must be zero or greater.</div>
+    </div>
+
+    <div class="col-12">
+      <label for="label-print-qty" class="form-label">Print quantity</label>
+      <input
+        id="label-print-qty"
+        type="number"
+        min="1"
+        step="1"
+        class="form-control"
+        formControlName="printQty"
+        [class.is-invalid]="isInvalid('printQty')"
+      />
+      <div class="invalid-feedback">Print quantity must be a positive whole number.</div>
+    </div>
   </div>
 
   <div mat-dialog-actions align="end">

@@ -21,7 +21,7 @@ export class SalesService {
   }
 
   create(sale: Omit<Sales, '_id'>) {
-    return this.http.post<ApiResponseFormat>(API_URL, sale);
+    return this.http.post<ApiResponseFormat & { result?: Sales }>(API_URL, sale);
   }
 
   update(id: string, sale: Omit<Sales, '_id'>) {
@@ -32,10 +32,10 @@ export class SalesService {
     return this.http.post<ApiResponseFormat>(`${API_URL}/${id}/print`, null);
   }
 
-  stock(barcode: string) {
+  stock(barcode: string, includeZeroStock: boolean = false) {
     return this.http.get<ApiResponseFormat & { result?: StockLookupResponse }>(
       `${API_URL}/stock-lookup`,
-      { params: { barcode } },
+      { params: { barcode, includeZeroStock: includeZeroStock.toString() } },
     );
   }
 }

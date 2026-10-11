@@ -2,6 +2,13 @@ export interface Sales {
   _id: string;
   orderNumber?: string;
   customerId?: string | null;
+  customer?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
+  };
   items: SalesItem[];
   subTotal: number;
   taxAmount: number;
@@ -20,4 +27,27 @@ export interface SalesItem {
   costPriceAtSale: number; // Snapshotted cost price from ProductStock for profit reporting
   soldPrice: number;
   discountAmount: number;
+  product?: {
+    _id: string;
+    name: string;
+    brand?: string;
+    categories?: string[];
+  };
+  variant?: {
+    _id: string;
+    sku: string;
+    barcode?: string;
+    weight: number;
+    unit: string;
+    isActive?: boolean;
+    isDeleted?: boolean;
+  };
+  stock?: {
+    _id: string;
+    batchNumber: string;
+    availableQty?: number;
+    isActive?: boolean;
+    isDeleted?: boolean;
+    isDeadStock?: boolean;
+  };
 }

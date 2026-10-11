@@ -34,6 +34,7 @@
                 [formControl]="customerSearch"
                 [matAutocomplete]="customerAutocomplete"
                 (input)="onCustomerSearchInput()"
+                (focus)="ensureCustomersLoaded()"
               />
               <mat-autocomplete
                 #customerAutocomplete="matAutocomplete"
@@ -136,6 +137,7 @@
               placeholder="Scan or enter barcode"
               aria-label="Scan or enter product barcode"
               autocomplete="off"
+              [disabled]="loadingSale()"
               [formControl]="barcode"
               (keydown.enter)="scanBarcode($event)"
             />
@@ -144,7 +146,7 @@
               color="primary"
               type="button"
               class="scan-button"
-              [disabled]="scanning() || loadingItemDetails() || !barcode.value.trim()"
+              [disabled]="loadingSale() || scanning() || loadingItemDetails() || !barcode.value.trim()"
               (click)="scanBarcode()"
             >
               @if (scanning()) {
@@ -186,41 +188,91 @@
                     <td>{{ item.controls.batchNumber.value }}</td>
                     <td>{{ item.controls.availableQty.value }}</td>
                     <td class="quantity-cell">
-                      <input
-                        #quantityInput
-                        type="number"
-                        min="1"
-                        [max]="item.controls.availableQty.value"
-                        class="form-control"
-                        formControlName="quantity"
-                        [class.is-invalid]="itemInvalid(item, 'quantity')"
-                        [attr.aria-label]="'Quantity for ' + item.controls.productName.value"
-                      />
-                      <div class="invalid-feedback">Enter an available quantity.</div>
+                      @if (isInlineEditing(item, 'quantity')) {
+                        <div class="inline-edit">
+                          <input
+                            #quantityInput
+                            type="number"
+                            min="1"
+                            [max]="item.controls.availableQty.value"
+                            class="form-control"
+                            formControlName="quantity"
+                            [class.is-invalid]="itemInvalid(item, 'quantity')"
+                            [attr.aria-label]="'Quantity for ' + item.controls.productName.value"
+                          />
+                          <button
+                            mat-icon-button
+                            class="inline-action save-action"
+                            type="button"
+                            [attr.aria-label]="'Save quantity for ' + item.controls.productName.value"
+                            title="Save quantity"
+                            (click)="saveInlineField(item, 'quantity')"
+                          >
+                            <i class="bi bi-check-lg" aria-hidden="true"></i>
+                          </button>
+                        </div>
+                        @if (itemInvalid(item, 'quantity')) {
+                          <small class="text-danger">Enter an available quantity.</small>
+                        }
+                      } @else {
+                        <div class="inline-edit">
+                          <span>{{ item.controls.quantity.value }}</span>
+                          <button
+                            mat-icon-button
+                            class="inline-action edit-action"
+                            type="button"
+                            [attr.aria-label]="'Edit quantity for ' + item.controls.productName.value"
+                            title="Edit quantity"
+                            (click)="editInlineField(item, 'quantity')"
+                          >
+                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                          </button>
+                        </div>
+                      }
                     </td>
                     <td>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        class="form-control price-cell"
-                        formControlName="soldPrice"
-                        [class.is-invalid]="itemInvalid(item, 'soldPrice')"
-                        [attr.aria-label]="'Price for ' + item.controls.productName.value"
-                      />
+                      {{ item.controls.soldPrice.value }}
                     </td>
-                    <td>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        class="form-control price-cell"
-                        formControlName="discountAmount"
-                        [class.is-invalid]="
-                          itemInvalid(item, 'discountAmount') || discountInvalid(item)
-                        "
-                        [attr.aria-label]="'Line discount for ' + item.controls.productName.value"
-                      />
+                    <td class="discount-cell">
+                      @if (isInlineEditing(item, 'discountAmount')) {
+                        <div class="inline-edit">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="form-control price-cell"
+                            formControlName="discountAmount"
+                            [class.is-invalid]="
+                              itemInvalid(item, 'discountAmount') || discountInvalid(item)
+                            "
+                            [attr.aria-label]="'Line discount for ' + item.controls.productName.value"
+                          />
+                          <button
+                            mat-icon-button
+                            class="inline-action save-action"
+                            type="button"
+                            [attr.aria-label]="'Save discount for ' + item.controls.productName.value"
+                            title="Save discount"
+                            (click)="saveInlineField(item, 'discountAmount')"
+                          >
+                            <i class="bi bi-check-lg" aria-hidden="true"></i>
+                          </button>
+                        </div>
+                      } @else {
+                        <div class="inline-edit">
+                          <span>{{ item.controls.discountAmount.value | number: '1.2-2' }}</span>
+                          <button
+                            mat-icon-button
+                            class="inline-action edit-action"
+                            type="button"
+                            [attr.aria-label]="'Edit discount for ' + item.controls.productName.value"
+                            title="Edit discount"
+                            (click)="editInlineField(item, 'discountAmount')"
+                          >
+                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                          </button>
+                        </div>
+                      }
                       @if (discountInvalid(item)) {
                         <small class="text-danger">Discount exceeds the line total.</small>
                       }
@@ -281,8 +333,24 @@
           </div>
         </div>
 
-        <div class="mt-4 d-flex justify-content-end">
-          <button mat-flat-button color="primary" type="submit" [disabled]="saving() || scanning()">
+        <div class="mt-4 d-flex justify-content-end gap-2">
+          @if (isEdit()) {
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="saving() || printing()"
+              (click)="printCurrentSale()"
+            >
+              <i class="bi bi-printer me-1" aria-hidden="true"></i>
+              {{ printing() ? 'Printing...' : 'Print bill' }}
+            </button>
+          }
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            [disabled]="saving() || scanning() || printing()"
+          >
             {{
               saving()
                 ? isEdit()

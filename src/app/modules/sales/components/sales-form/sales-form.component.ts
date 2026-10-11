@@ -15,12 +15,11 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Customer, CustomerInput } from '../../../../shared/interfaces/customer.interface';
-import { Product } from '../../../../shared/interfaces/product.interface';
 import { StockLookupResponse } from '../../../../shared/interfaces/product-stock.interface';
 import { Sales, SalesItem } from '../../../../shared/interfaces/sales.interface';
+import { AuthService } from '../../../../shared/services/auth.service';
 import { CustomersService } from '../../../../shared/services/customers.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
-import { ProductsService } from '../../../../shared/services/products.service';
 import { SalesService } from '../../../../shared/services/sales.service';
 import { CustomerCreateDialogComponent } from './customer-create-dialog.component';
 
@@ -63,7 +62,7 @@ export class SalesFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly salesService = inject(SalesService);
-  private readonly productsService = inject(ProductsService);
+  private readonly auth = inject(AuthService);
   private readonly customersService = inject(CustomersService);
   private readonly dialog = inject(MatDialog);
   private readonly notification = inject(NotificationService);
@@ -73,18 +72,21 @@ export class SalesFormComponent implements OnInit {
   @ViewChildren('quantityInput') private quantityInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
   readonly saving = signal(false);
+  readonly printing = signal(false);
   readonly scanning = signal(false);
   readonly loadingSale = signal(false);
   readonly loadingItemDetails = signal(false);
   readonly isEdit = signal(false);
+  readonly isAdmin = this.auth.getUserIdentity()?.role?.trim().toLowerCase() === 'admin';
   readonly loadingCustomers = signal(false);
   readonly creatingCustomer = signal(false);
   readonly customers = signal<Customer[]>([]);
   readonly customerSearch = new FormControl('', { nonNullable: true });
   readonly barcode = new FormControl('', { nonNullable: true });
+  readonly editingQuantities = signal<ReadonlySet<FormGroup<SalesItemControls>>>(new Set());
+  readonly editingDiscounts = signal<ReadonlySet<FormGroup<SalesItemControls>>>(new Set());
   private saleId: string | null = null;
-  private pendingItemDetails = 0;
-  private itemDetailsErrorNotified = false;
+  private customersLoaded = false;
 
   readonly form = this.formBuilder.group({
     customerId: [''],
@@ -100,9 +102,14 @@ export class SalesFormComponent implements OnInit {
   }
 
   ngOnInit() {
+    if (!this.isAdmin) {
+      this.form.controls.salesDate.disable({ emitEvent: false });
+    }
+
     this.saleId = this.route.snapshot.paramMap.get('id');
-    this.loadCustomers();
     if (!this.saleId) {
+      this.loadCustomers();
+      this.focusBarcodeInput();
       return;
     }
 
@@ -126,6 +133,7 @@ export class SalesFormComponent implements OnInit {
 
         this.patchSale(sale);
         this.loadingSale.set(false);
+        this.focusBarcodeInput();
       },
       error: () => {
         this.notification.error('Failed to load sale.');
@@ -138,7 +146,7 @@ export class SalesFormComponent implements OnInit {
   scanBarcode(event?: Event) {
     event?.preventDefault();
     const barcode = this.barcode.value.trim();
-    if (this.scanning() || this.loadingItemDetails() || !barcode) {
+    if (this.loadingSale() || this.scanning() || this.loadingItemDetails() || !barcode) {
       return;
     }
 
@@ -174,6 +182,9 @@ export class SalesFormComponent implements OnInit {
   }
 
   removeItem(index: number) {
+    const item = this.items.at(index);
+    this.updateEditingItems('quantity', item, false);
+    this.updateEditingItems('discountAmount', item, false);
     this.items.removeAt(index);
   }
 
@@ -220,6 +231,12 @@ export class SalesFormComponent implements OnInit {
     this.customerSearch.setValue(this.customerLabel(customer));
   }
 
+  ensureCustomersLoaded() {
+    if (!this.customersLoaded && !this.loadingCustomers()) {
+      this.loadCustomers();
+    }
+  }
+
   addCustomer() {
     const dialogRef = this.dialog.open(CustomerCreateDialogComponent, {
       width: 'min(560px, 95vw)',
@@ -243,6 +260,45 @@ export class SalesFormComponent implements OnInit {
       item.hasError('discountExceedsLineTotal') &&
       (item.controls.discountAmount.dirty || item.controls.discountAmount.touched)
     );
+  }
+
+  isInlineEditing(item: FormGroup<SalesItemControls>, field: 'quantity' | 'discountAmount') {
+    return (field === 'quantity' ? this.editingQuantities() : this.editingDiscounts()).has(item);
+  }
+
+  editInlineField(item: FormGroup<SalesItemControls>, field: 'quantity' | 'discountAmount') {
+    this.updateEditingItems(field, item, true);
+  }
+
+  saveInlineField(item: FormGroup<SalesItemControls>, field: 'quantity' | 'discountAmount') {
+    const control = item.controls[field];
+    control.markAsTouched();
+    if (
+      control.invalid ||
+      (field === 'discountAmount' && item.hasError('discountExceedsLineTotal'))
+    ) {
+      return;
+    }
+
+    control.markAsPristine();
+    this.updateEditingItems(field, item, false);
+  }
+
+  private updateEditingItems(
+    field: 'quantity' | 'discountAmount',
+    item: FormGroup<SalesItemControls>,
+    editing: boolean,
+  ) {
+    const editingItems = field === 'quantity' ? this.editingQuantities : this.editingDiscounts;
+    editingItems.update((current) => {
+      const next = new Set(current);
+      if (editing) {
+        next.add(item);
+      } else {
+        next.delete(item);
+      }
+      return next;
+    });
   }
 
   lineTotal(item: FormGroup<SalesItemControls>) {
@@ -272,6 +328,7 @@ export class SalesFormComponent implements OnInit {
     }
 
     const value = this.form.getRawValue();
+    const currentUtcTime = new Date().toISOString().slice(11);
     const sale: Omit<Sales, '_id'> = {
       customerId: value.customerId || null,
       items: value.items.map((item): SalesItem => ({
@@ -289,31 +346,112 @@ export class SalesFormComponent implements OnInit {
       grandTotal: this.grandTotal(),
       paymentStatus: value.paymentStatus,
       ...(value.paymentStatus === 'PAID' ? { paymentMethod: value.paymentMethod } : {}),
-      salesDate: new Date(`${value.salesDate}T00:00:00.000Z`),
+      salesDate: new Date(`${value.salesDate}T${currentUtcTime}`),
     };
 
-    const request =
-      this.isEdit() && this.saleId
-        ? this.salesService.update(this.saleId, sale)
-        : this.salesService.create(sale);
+    if (this.isEdit()) {
+      const saleId = this.saleId;
+      if (!saleId) {
+        this.notification.error('Cannot update sale because its ID is missing.');
+        return;
+      }
+
+      this.saving.set(true);
+      this.salesService.update(saleId, sale).subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.notification.success('Sale updated successfully.');
+          this.promptToPrint(saleId);
+        },
+        error: () => {
+          this.notification.error('Failed to update sale.');
+          this.saving.set(false);
+        },
+      });
+      return;
+    }
+
     this.saving.set(true);
-    request.subscribe({
-      next: () => {
-        this.notification.success(
-          this.isEdit() ? 'Sale updated successfully.' : 'Sale created successfully.',
-        );
-        this.router.navigate(['/app/sales']);
+    this.salesService.create(sale).subscribe({
+      next: (response) => {
+        this.saving.set(false);
+        this.notification.success('Sale created successfully.');
+        const createdSaleId = response.result?._id;
+        if (!createdSaleId) {
+          this.notification.error(
+            'The sale was created, but no sale ID was returned for printing.',
+          );
+          this.router.navigate(['/app/sales']);
+          return;
+        }
+
+        this.promptToPrint(createdSaleId);
       },
       error: () => {
-        this.notification.error(
-          this.isEdit() ? 'Failed to update sale.' : 'Failed to create sale.',
-        );
+        this.notification.error('Failed to create sale.');
         this.saving.set(false);
       },
     });
   }
 
+  printCurrentSale() {
+    if (this.saleId) {
+      this.printSaleById(this.saleId);
+    }
+  }
+
+  private promptToPrint(saleId: string) {
+    this.notification.confirmation(
+      'Would you like to print the bill?',
+      () => this.printSaleById(saleId, true),
+      'Print bill?',
+      () => this.router.navigate(['/app/sales']),
+      undefined,
+      'Yes',
+      'No',
+    );
+  }
+
+  private printSaleById(saleId: string, returnToList = false) {
+    if (this.printing()) {
+      return;
+    }
+
+    this.printing.set(true);
+    this.salesService.print(saleId).subscribe({
+      next: () => {
+        this.notification.success('Sale sent to print.');
+        this.printing.set(false);
+        if (returnToList) {
+          this.router.navigate(['/app/sales']);
+        }
+      },
+      error: () => {
+        this.notification.error('Failed to print sale.');
+        this.printing.set(false);
+        if (returnToList) {
+          this.router.navigate(['/app/sales']);
+        }
+      },
+    });
+  }
+
   private patchSale(sale: Sales) {
+    if (sale.customer) {
+      const customer: Customer = {
+        _id: sale.customer._id,
+        firstName: sale.customer.firstName,
+        lastName: sale.customer.lastName,
+        email: sale.customer.email ?? '',
+        phone: sale.customer.phone ?? '',
+      };
+      this.customers.update((customers) =>
+        customers.some((existing) => existing._id === customer._id)
+          ? customers.map((existing) => (existing._id === customer._id ? customer : existing))
+          : [...customers, customer],
+      );
+    }
+
     this.form.patchValue(
       {
         customerId: sale.customerId ?? '',
@@ -326,25 +464,32 @@ export class SalesFormComponent implements OnInit {
     );
     this.syncCustomerSearchFromSelection();
 
-    this.pendingItemDetails = sale.items.length;
-    this.loadingItemDetails.set(this.pendingItemDetails > 0);
     sale.items.forEach((saleItem) => this.addExistingItem(saleItem));
   }
 
   private addExistingItem(saleItem: SalesItem) {
+    const availableQty =
+      saleItem.quantity +
+      (saleItem.stock?.isActive && !saleItem.stock.isDeleted && !saleItem.stock.isDeadStock
+        ? Math.max(0, saleItem.stock.availableQty ?? 0)
+        : 0);
     const item = this.formBuilder.group(
       {
         _id: [saleItem._id ?? ''],
         productId: [saleItem.productId],
         productVariantId: [saleItem.productVariantId],
         productStockId: [saleItem.productStockId],
-        productName: [`${saleItem.productId} — ${saleItem.productVariantId}`],
-        batchNumber: [saleItem.productStockId],
-        availableQty: [saleItem.quantity],
+        productName: [
+          saleItem.product?.name && saleItem.variant?.sku
+            ? `${saleItem.product.name} — ${saleItem.variant.sku}`
+            : `${saleItem.productId} — ${saleItem.productVariantId}`,
+        ],
+        batchNumber: [saleItem.stock?.batchNumber ?? saleItem.productStockId],
+        availableQty: [availableQty],
         originalQuantity: [saleItem.quantity],
         quantity: [
           saleItem.quantity,
-          [Validators.required, Validators.min(1), Validators.max(saleItem.quantity)],
+          [Validators.required, Validators.min(1), Validators.max(availableQty)],
         ],
         costPriceAtSale: [saleItem.costPriceAtSale],
         soldPrice: [saleItem.soldPrice, [Validators.required, Validators.min(0)]],
@@ -353,74 +498,6 @@ export class SalesFormComponent implements OnInit {
       { validators: validLineDiscount },
     );
     this.items.push(item);
-
-    this.productsService.getById(saleItem.productId).subscribe({
-      next: (response) => {
-        const product = response.result;
-        if (!product) {
-          this.notifyItemDetailsError();
-          this.finishItemDetailsLookup();
-          return;
-        }
-
-        const variant = product.variants?.find(
-          (candidate) => candidate._id === saleItem.productVariantId,
-        );
-        item.controls.productName.setValue(
-          variant ? `${product.name} — ${variant.sku}` : product.name,
-        );
-        if (!variant?.barcode) {
-          this.finishItemDetailsLookup();
-          return;
-        }
-
-        this.salesService.stock(variant.barcode).subscribe({
-          next: (stockResponse) => {
-            const batch = stockResponse.result?.stock.batches.find(
-              (candidate) => candidate._id === saleItem.productStockId,
-            );
-            if (batch) {
-              const availableQty =
-                saleItem.quantity +
-                (batch.isActive && !batch.isDeleted && !batch.isDeadStock
-                  ? Math.max(0, batch.availableQty)
-                  : 0);
-              item.controls.batchNumber.setValue(batch.batchNumber);
-              item.controls.availableQty.setValue(availableQty);
-              item.controls.quantity.setValidators([
-                Validators.required,
-                Validators.min(1),
-                Validators.max(availableQty),
-              ]);
-              item.controls.quantity.updateValueAndValidity({ emitEvent: false });
-            }
-            this.finishItemDetailsLookup();
-          },
-          error: () => {
-            this.notifyItemDetailsError();
-            this.finishItemDetailsLookup();
-          },
-        });
-      },
-      error: () => {
-        this.notifyItemDetailsError();
-        this.finishItemDetailsLookup();
-      },
-    });
-  }
-
-  private finishItemDetailsLookup() {
-    this.pendingItemDetails -= 1;
-    if (this.pendingItemDetails === 0) {
-      this.loadingItemDetails.set(false);
-    }
-  }
-
-  private notifyItemDetailsError() {
-    if (!this.itemDetailsErrorNotified) {
-      this.notification.error('Some saved product details could not be loaded.');
-      this.itemDetailsErrorNotified = true;
-    }
   }
 
   private addStockedVariant(lookup: StockLookupResponse) {
@@ -448,7 +525,7 @@ export class SalesFormComponent implements OnInit {
       const nextQuantity = existingItem.controls.quantity.value + 1;
       existingItem.controls.quantity.setValue(nextQuantity);
       existingItem.controls.quantity.markAsDirty();
-      this.focusQuantityInput(this.items.controls.indexOf(existingItem));
+      // this.focusQuantityInput(this.items.controls.indexOf(existingItem));
       return;
     }
 
@@ -470,11 +547,17 @@ export class SalesFormComponent implements OnInit {
       { validators: validLineDiscount },
     );
     this.items.push(item);
-    this.focusQuantityInput(this.items.length - 1);
+    // this.focusQuantityInput(this.items.length - 1);
   }
 
   private focusQuantityInput(index: number) {
     afterNextRender(() => this.quantityInputs.get(index)?.nativeElement.focus(), {
+      injector: this.injector,
+    });
+  }
+
+  private focusBarcodeInput() {
+    afterNextRender(() => this.barcodeInput?.nativeElement.focus(), {
       injector: this.injector,
     });
   }
@@ -499,7 +582,15 @@ export class SalesFormComponent implements OnInit {
       .subscribe({
         next: (response) => {
           const customers = response.result?.documentItems ?? [];
-          this.customers.set(customers);
+          this.customersLoaded = true;
+          const selectedCustomer = this.customers().find(
+            (customer) => customer._id === this.form.controls.customerId.value,
+          );
+          this.customers.set(
+            selectedCustomer && !customers.some((customer) => customer._id === selectedCustomer._id)
+              ? [...customers, selectedCustomer]
+              : customers,
+          );
           if (!this.saleId) {
             const defaultWalkingCustomer = customers.find(
               (customer) => customer.isDefaultWalking === true,
@@ -644,7 +735,9 @@ export class SalesFormComponent implements OnInit {
     this.customerSearch.setValue(selectedCustomer ? this.customerLabel(selectedCustomer) : '');
   }
 
-  private customerLabel(customer: Customer) {
+  private customerLabel(
+    customer: Pick<Customer, 'firstName' | 'lastName'> & Partial<Pick<Customer, 'phone'>>,
+  ) {
     const name = [customer.firstName, customer.lastName].filter(Boolean).join(' ');
     return customer.phone ? `${name} — ${customer.phone}` : name;
   }

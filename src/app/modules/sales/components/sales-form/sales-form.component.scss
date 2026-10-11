@@ -15,7 +15,62 @@
 }
 
 .quantity-cell {
-  min-width: 105px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.discount-cell {
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.inline-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+}
+
+.inline-edit > span {
+  min-width: 2rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.inline-action.mat-mdc-icon-button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  flex: 0 0 36px;
+  border-radius: 0.625rem;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
+.inline-action i {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.edit-action.mat-mdc-icon-button {
+  color: #475569;
+  background-color: #f1f5f9;
+}
+
+.edit-action.mat-mdc-icon-button:hover {
+  color: #0d6efd;
+  background-color: #e7f0ff;
+}
+
+.save-action.mat-mdc-icon-button {
+  color: #198754;
+  background-color: #e8f5ed;
+}
+
+.save-action.mat-mdc-icon-button:hover {
+  color: #146c43;
+  background-color: #d1e7dd;
 }
 
 .price-cell {

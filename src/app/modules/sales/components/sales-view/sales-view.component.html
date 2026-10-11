@@ -6,7 +6,27 @@
         <small class="text-muted">{{ record.orderNumber }}</small>
       }
     </div>
-    <button mat-stroked-button type="button" routerLink="/app/sales">Back to sales</button>
+    <div class="d-flex gap-2">
+      @if (sale()) {
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="printing()"
+          (click)="printSale()"
+          [attr.aria-label]="printing() ? 'Printing sale' : 'Print sale'"
+          [attr.title]="printing() ? 'Printing sale...' : 'Print sale'"
+        >
+          <i
+            class="bi"
+            [class.bi-printer]="!printing()"
+            [class.bi-hourglass-split]="printing()"
+            aria-hidden="true"
+          ></i>
+          {{ printing() ? 'Printing...' : 'Print' }}
+        </button>
+      }
+      <button mat-stroked-button type="button" routerLink="/app/sales">Back to sales</button>
+    </div>
   </div>
 
   @if (loading()) {
@@ -74,7 +94,7 @@
               <tr>
                 <td>{{ productName(item) }}</td>
                 <td>{{ variantLabel(item) }}</td>
-                <td class="text-break">{{ item.productStockId }}</td>
+                <td class="text-break">{{ item.stock?.batchNumber ?? item.productStockId }}</td>
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.costPriceAtSale | number: '1.2-2' }}</td>
                 <td>{{ item.soldPrice | number: '1.2-2' }}</td>

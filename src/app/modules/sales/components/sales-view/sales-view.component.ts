@@ -3,12 +3,8 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { Customer } from '../../../../shared/interfaces/customer.interface';
-import { Product } from '../../../../shared/interfaces/product.interface';
 import { Sales, SalesItem } from '../../../../shared/interfaces/sales.interface';
-import { CustomersService } from '../../../../shared/services/customers.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
-import { ProductsService } from '../../../../shared/services/products.service';
 import { SalesService } from '../../../../shared/services/sales.service';
 
 @Component({
@@ -22,15 +18,11 @@ export class SalesViewComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly salesService = inject(SalesService);
-  private readonly customersService = inject(CustomersService);
-  private readonly productsService = inject(ProductsService);
   private readonly notification = inject(NotificationService);
 
   readonly sale = signal<Sales | null>(null);
-  readonly customer = signal<Customer | null>(null);
-  readonly products = signal<Record<string, Product>>({});
   readonly loading = signal(false);
-  private productLookupErrorNotified = false;
+  readonly printing = signal(false);
 
   ngOnInit() {
     const saleId = this.route.snapshot.paramMap.get('id');
@@ -50,9 +42,8 @@ export class SalesViewComponent implements OnInit {
           this.router.navigate(['/app/sales']);
           return;
         }
-
         this.sale.set(sale);
-        this.loadRelatedRecords(sale);
+        this.sale.set(sale);
         this.loading.set(false);
       },
       error: () => {
@@ -68,22 +59,18 @@ export class SalesViewComponent implements OnInit {
     if (!sale?.customerId) {
       return 'Walk-in';
     }
-    const customer = this.customer();
-    return customer
-      ? `${customer.firstName} ${customer.lastName}`
+    return sale.customer
+      ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
       : sale.customerId;
   }
 
   productName(item: SalesItem) {
-    return this.products()[item.productId]?.name ?? item.productId;
+    return item.product?.name ?? item.productId;
   }
 
   variantLabel(item: SalesItem) {
-    const variant = this.products()[item.productId]?.variants?.find(
-      (candidate) => candidate._id === item.productVariantId,
-    );
-    return variant
-      ? `${variant.sku} (${variant.weight} ${variant.unit})`
+    return item.variant
+      ? `${item.variant.sku} (${item.variant.weight} ${item.variant.unit})`
       : item.productVariantId;
   }
 
@@ -91,34 +78,23 @@ export class SalesViewComponent implements OnInit {
     return Math.max(0, item.quantity * item.soldPrice - item.discountAmount);
   }
 
-  private loadRelatedRecords(sale: Sales) {
-    if (sale.customerId) {
-      this.customersService.getById(sale.customerId).subscribe({
-        next: (response) => this.customer.set(response.result ?? null),
-        error: () => this.notification.error('Failed to load customer details.'),
-      });
+  printSale() {
+    const saleId = this.sale()?._id;
+    if (!saleId || this.printing()) {
+      return;
     }
 
-    const productIds = [...new Set(sale.items.map((item) => item.productId))];
-    productIds.forEach((productId) => {
-      this.productsService.getById(productId).subscribe({
-        next: (response) => {
-          const product = response.result;
-          if (product) {
-            this.products.update((current) => ({ ...current, [productId]: product }));
-          } else {
-            this.notifyProductLookupError();
-          }
-        },
-        error: () => this.notifyProductLookupError(),
-      });
+    this.printing.set(true);
+    this.salesService.print(saleId).subscribe({
+      next: () => {
+        this.notification.success('Sale sent to print.');
+        this.printing.set(false);
+      },
+      error: () => {
+        this.notification.error('Failed to print sale.');
+        this.printing.set(false);
+      },
     });
   }
 
-  private notifyProductLookupError() {
-    if (!this.productLookupErrorNotified) {
-      this.notification.error('Some product details could not be loaded; showing product IDs.');
-      this.productLookupErrorNotified = true;
-    }
-  }
 }

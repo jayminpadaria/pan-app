@@ -18,7 +18,7 @@ import { CustomersService } from '../../../../shared/services/customers.service'
 import { NotificationService } from '../../../../shared/services/notification.service';
 import { SalesService } from '../../../../shared/services/sales.service';
 
-const DEFAULT_SORT = { header: 'salesDate', direction: 'DESC' };
+const DEFAULT_SORT = { header: 'updatedAt', direction: 'DESC' };
 
 @Component({
   selector: 'app-sales-list',
