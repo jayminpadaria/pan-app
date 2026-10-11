@@ -43,13 +43,13 @@
       <input
         id="label-mrp"
         type="number"
-        min="0"
+        min="0.01"
         step="0.01"
         class="form-control"
         formControlName="mrp"
         [class.is-invalid]="isInvalid('mrp')"
       />
-      <div class="invalid-feedback">MRP must be zero or greater.</div>
+      <div class="invalid-feedback">MRP must be greater than zero.</div>
     </div>
 
     <div class="col-12">

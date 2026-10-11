@@ -22,6 +22,11 @@ const dateInput = (date: Date) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
+const batchNumberFor = (date: string) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  return match ? `B-${match[1]}${match[2]}${match[3]}` : '';
+};
+
 const addMonths = (value: string, months: number) => {
   const [year, month, day] = value.split('-').map(Number);
   if (!year || !month || !day) {
@@ -52,10 +57,13 @@ export class ProductLabelDialogComponent implements OnInit {
   private readonly initialMfdDate = dateInput(new Date());
 
   readonly form = this.formBuilder.group({
-    batchNumber: ['', [Validators.required, Validators.pattern(/\S/)]],
+    batchNumber: [
+      batchNumberFor(this.initialMfdDate),
+      [Validators.required, Validators.pattern(/\S/)],
+    ],
     mfdDate: [this.initialMfdDate, Validators.required],
     expDate: [addMonths(this.initialMfdDate, 3), Validators.required],
-    mrp: [0, [Validators.required, Validators.min(0)]],
+    mrp: [0, [Validators.required, Validators.min(0.01)]],
     printQty: [1, [Validators.required, Validators.min(1), Validators.pattern(/^[1-9]\d*$/)]],
   });
 
