@@ -27,6 +27,7 @@ export class DashboardComponent implements OnInit {
   readonly requestedDate = signal(localDateKey(new Date()));
   readonly loading = signal(false);
   readonly dashboard = signal<DashboardReport | null>(null);
+  readonly downloadingReports = signal(false);
 
   ngOnInit() {
     interval(1000)
@@ -68,5 +69,38 @@ export class DashboardComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  downloadReports() {
+    if (this.downloadingReports()) {
+      return;
+    }
+
+    this.downloadingReports.set(true);
+    this.dashboardService
+      .downloadDashboard(this.requestedDate())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (pdf) => {
+          if (!pdf.size) {
+            this.notification.error('The dashboard report PDF was empty.');
+            this.downloadingReports.set(false);
+            return;
+          }
+
+          const url = URL.createObjectURL(pdf);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `dashboard-report-${this.requestedDate()}.pdf`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url));
+          this.notification.success('Dashboard report downloaded successfully.');
+          this.downloadingReports.set(false);
+        },
+        error: () => {
+          this.notification.error('Failed to download the dashboard report.');
+          this.downloadingReports.set(false);
+        },
+      });
   }
 }

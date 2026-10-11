@@ -55,6 +55,7 @@ export class ProductListComponent implements OnInit {
   readonly page = signal(1);
   readonly limit = signal(10);
   readonly loading = signal(false);
+  readonly downloadingProducts = signal(false);
   readonly printingVariantId = signal<string | null>(null);
   readonly sortHeader = signal(DEFAULT_SORT.header);
   readonly sortDirection = signal(DEFAULT_SORT.direction);
@@ -92,6 +93,30 @@ export class ProductListComponent implements OnInit {
 
   categories(product: Product) {
     return product.categoriesName?.join(', ') || '—';
+  }
+
+  downloadAllProducts() {
+    if (this.downloadingProducts()) {
+      return;
+    }
+
+    this.downloadingProducts.set(true);
+    this.productsService.downloadBarcodesPdf().subscribe({
+      next: (pdf) => {
+        const url = URL.createObjectURL(pdf);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'product-barcodes.pdf';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url));
+        this.notification.success('Product barcodes downloaded successfully.');
+        this.downloadingProducts.set(false);
+      },
+      error: () => {
+        this.notification.error('Failed to download product barcodes.');
+        this.downloadingProducts.set(false);
+      },
+    });
   }
 
   printVariantLabel(product: Product, variantId: string, sku: string) {

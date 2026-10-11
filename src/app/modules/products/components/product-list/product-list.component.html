@@ -4,10 +4,27 @@
       <h4 class="mb-0">Products</h4>
       <small class="text-muted">{{ total() }} total</small>
     </div>
-    <button mat-flat-button color="primary" type="button" routerLink="/app/products/create">
-      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
-      Add Product
-    </button>
+    <div class="d-flex align-items-center gap-2">
+      <button mat-flat-button color="primary" type="button" routerLink="/app/products/create">
+        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+        Add Product
+      </button>
+      <button
+        mat-icon-button
+        type="button"
+        [disabled]="downloadingProducts()"
+        (click)="downloadAllProducts()"
+        aria-label="Download all products"
+        [attr.title]="downloadingProducts() ? 'Downloading products...' : 'Download all products'"
+      >
+        <i
+          class="bi"
+          [class.bi-download]="!downloadingProducts()"
+          [class.bi-hourglass-split]="downloadingProducts()"
+          aria-hidden="true"
+        ></i>
+      </button>
+    </div>
   </div>
 
   <div class="card-body border-bottom d-flex align-items-center gap-3">

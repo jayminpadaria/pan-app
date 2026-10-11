@@ -16,4 +16,8 @@ export class DashboardReportService {
       { date },
     );
   }
+
+  downloadDashboard(date: string) {
+    return this.http.post(`${API_URL}/dashboard/pdf`, { date }, { responseType: 'blob' });
+  }
 }

@@ -5,6 +5,7 @@ export interface Product {
   categories?: string[];
   categoriesName?: string[];
   variants?: ProductVariant[];
+  isInUse?: boolean;
 }
 
 export interface ProductVariant {
@@ -13,6 +14,7 @@ export interface ProductVariant {
   barcode?: string;
   weight: number;
   unit: string;
+  isInUse?: boolean;
 }
 
 export type ProductVariantInput = Omit<ProductVariant, '_id'>;

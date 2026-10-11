@@ -40,6 +40,7 @@
                     <button
                       matChipRemove
                       type="button"
+                      [disabled]="isInUse()"
                       [attr.aria-label]="'Remove ' + categoryLabel(category)"
                     >
                       <i class="bi bi-x-lg" aria-hidden="true"></i>
@@ -99,8 +100,8 @@
               </thead>
               <tbody>
                 @for (
-                  variant of variants.controls;
-                  track getVariantId(variant) ?? $index;
+                  variant of variantRows();
+                  track variant;
                   let i = $index
                 ) {
                   <tr>
@@ -111,9 +112,13 @@
                       <button
                         mat-icon-button
                         type="button"
-                        [attr.aria-label]="'Edit variant ' + (i + 1)"
-                        title="Edit variant"
-                        [disabled]="savingVariant()"
+                        [attr.aria-label]="
+                          isVariantInUse(variant)
+                            ? 'Variant ' + (i + 1) + ' is in use and cannot be edited'
+                            : 'Edit variant ' + (i + 1)
+                        "
+                        [attr.title]="isVariantInUse(variant) ? 'Variant is in use' : 'Edit variant'"
+                        [disabled]="savingVariant() || isVariantInUse(variant)"
                         (click)="openVariantDialog(variant)"
                       >
                         <i class="bi bi-pencil me-1" aria-hidden="true"></i>
@@ -121,9 +126,15 @@
                       <button
                         mat-icon-button
                         type="button"
-                        [attr.aria-label]="'Remove variant ' + (i + 1)"
-                        title="Remove variant"
-                        [disabled]="savingVariant()"
+                        [attr.aria-label]="
+                          isVariantInUse(variant)
+                            ? 'Variant ' + (i + 1) + ' is in use and cannot be deleted'
+                            : 'Remove variant ' + (i + 1)
+                        "
+                        [attr.title]="
+                          isVariantInUse(variant) ? 'Variant is in use' : 'Remove variant'
+                        "
+                        [disabled]="savingVariant() || isVariantInUse(variant)"
                         (click)="removeVariant(i)"
                       >
                         <i class="bi bi-trash" aria-hidden="true"></i>

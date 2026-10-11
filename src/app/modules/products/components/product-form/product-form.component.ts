@@ -40,10 +40,13 @@ export class ProductFormComponent implements OnInit {
   readonly loadingProduct = signal(false);
   readonly loadingCategories = signal(false);
   readonly isEdit = signal(false);
+  readonly isInUse = signal(false);
   readonly availableCategories = signal<Category[]>([]);
+  readonly variantRows = signal<FormGroup<ProductVariantControls>[]>([]);
   readonly categorySearch = new FormControl('', { nonNullable: true });
   private productId: string | null = null;
   private readonly variantIds = new WeakMap<FormGroup<ProductVariantControls>, string | null>();
+  private readonly inUseVariants = new WeakSet<FormGroup<ProductVariantControls>>();
   readonly savingVariant = signal(false);
 
   readonly form = this.formBuilder.group({
@@ -75,8 +78,17 @@ export class ProductFormComponent implements OnInit {
           return;
         }
 
-        this.patchProduct(res.result);
-        this.setVariants(res.result.variants ?? []);
+        const product = res.result;
+        this.isInUse.set(product.isInUse === true);
+        this.patchProduct(product);
+        this.setVariants(product.variants ?? []);
+        if (this.isInUse()) {
+          this.form.controls.name.disable({ emitEvent: false });
+          this.form.controls.sku.disable({ emitEvent: false });
+          this.form.controls.brand.disable({ emitEvent: false });
+          this.form.controls.categories.disable({ emitEvent: false });
+          this.categorySearch.disable({ emitEvent: false });
+        }
         this.loadingProduct.set(false);
       },
       error: () => {
@@ -94,15 +106,19 @@ export class ProductFormComponent implements OnInit {
       unit: [variant?.unit ?? '', Validators.required],
     });
     this.variantIds.set(group, variant?._id ?? null);
+    if (variant?.isInUse) {
+      this.inUseVariants.add(group);
+    }
     if (this.isEdit() && variant?._id) {
       group.disable();
     }
     this.variants.push(group);
+    this.variantRows.update((rows) => [...rows, group]);
     return group;
   }
 
   openVariantDialog(variant?: FormGroup<ProductVariantControls>) {
-    if (this.savingVariant()) {
+    if (this.savingVariant() || (variant && this.isVariantInUse(variant))) {
       return;
     }
 
@@ -132,19 +148,19 @@ export class ProductFormComponent implements OnInit {
 
   removeVariant(index: number) {
     const variant = this.variants.at(index);
-    if (this.savingVariant()) {
+    if (this.savingVariant() || this.isVariantInUse(variant)) {
       return;
     }
     const variantId = this.variantIds.get(variant);
     if (!variantId || !this.productId) {
-      this.variants.removeAt(index);
+      this.removeVariantAt(index);
       return;
     }
 
     this.savingVariant.set(true);
     this.productsService.removeVariant(this.productId, variantId).subscribe({
       next: () => {
-        this.variants.removeAt(index);
+        this.removeVariantAt(index);
         this.notification.success('Variant removed successfully.');
         this.savingVariant.set(false);
       },
@@ -159,11 +175,24 @@ export class ProductFormComponent implements OnInit {
     return this.variantIds.get(variant) ?? null;
   }
 
+  isVariantInUse(variant: FormGroup<ProductVariantControls>) {
+    return this.inUseVariants.has(variant);
+  }
+
+  private removeVariantAt(index: number) {
+    this.variants.removeAt(index);
+    this.variantRows.update((rows) => rows.filter((_, rowIndex) => rowIndex !== index));
+  }
+
   private persistVariant(
     variant: FormGroup<ProductVariantControls> | undefined,
     payload: ProductVariantInput,
   ) {
-    if (!this.productId || this.savingVariant()) {
+    if (
+      !this.productId ||
+      this.savingVariant() ||
+      (variant && this.isVariantInUse(variant))
+    ) {
       return;
     }
 
@@ -328,12 +357,11 @@ export class ProductFormComponent implements OnInit {
       brand: product.brand ?? '',
       categories: product.categories ?? [],
     });
-    this.variants.clear();
-    product.variants?.forEach((variant) => this.addVariant(variant));
   }
 
   private setVariants(variants: ProductVariant[]) {
     this.variants.clear();
+    this.variantRows.set([]);
     variants.forEach((variant) => this.addVariant(variant));
   }
 }

@@ -66,4 +66,8 @@ export class ProductsService {
       label,
     );
   }
+
+  downloadBarcodesPdf() {
+    return this.http.get(`${API_URL}/barcodes/pdf`, { responseType: 'blob' });
+  }
 }

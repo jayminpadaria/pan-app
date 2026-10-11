@@ -9,6 +9,21 @@
       <span class="clock-date">{{ now() | date: 'EEEE, MMMM d, y' }}</span>
       <span class="clock-time">{{ now() | date: 'h:mm:ss a' }}</span>
     </div>
+    <!-- <button
+      mat-icon-button
+      type="button"
+      [disabled]="downloadingReports()"
+      (click)="downloadReports()"
+      aria-label="Download all reports"
+      [attr.title]="downloadingReports() ? 'Downloading...' : 'Download all reports'"
+    >
+      <i
+        class="bi"
+        [class.bi-download]="!downloadingReports()"
+        [class.bi-hourglass-split]="downloadingReports()"
+        aria-hidden="true"
+      ></i>
+    </button> -->
   </header>
 
   @if (loading()) {
@@ -26,8 +41,12 @@
             {{ data.sales.salesCount }} sales · {{ data.sales.unitsSold | number }} units sold
           </p>
           <div class="metric-list">
-            <span>Subtotal <strong>{{ data.sales.subTotal | number: '1.2-2' }}</strong></span>
-            <span>Tax <strong>{{ data.sales.taxAmount | number: '1.2-2' }}</strong></span>
+            <span
+              >Subtotal <strong>{{ data.sales.subTotal | number: '1.2-2' }}</strong></span
+            >
+            <span
+              >Tax <strong>{{ data.sales.taxAmount | number: '1.2-2' }}</strong></span
+            >
             <span>
               Cost of goods sold
               <strong>{{ data.sales.costOfGoodsSold | number: '1.2-2' }}</strong>
@@ -58,12 +77,19 @@
             {{ data.stock.totals.stockBatchCount }} batches
           </p>
           <div class="metric-list">
-            <span>Inventory cost value
+            <span
+              >Inventory cost value
               <strong>{{ data.stock.totals.inventoryCostValue | number: '1.2-2' }}</strong>
             </span>
-            <span>Damaged <strong>{{ data.stock.totals.damagedQty | number }}</strong></span>
-            <span>Expired <strong>{{ data.stock.totals.expiredQty | number }}</strong></span>
-            <span>Obsolete <strong>{{ data.stock.totals.obsoleteQty | number }}</strong></span>
+            <span
+              >Damaged <strong>{{ data.stock.totals.damagedQty | number }}</strong></span
+            >
+            <span
+              >Expired <strong>{{ data.stock.totals.expiredQty | number }}</strong></span
+            >
+            <span
+              >Obsolete <strong>{{ data.stock.totals.obsoleteQty | number }}</strong></span
+            >
           </div>
         </div>
       </article>
