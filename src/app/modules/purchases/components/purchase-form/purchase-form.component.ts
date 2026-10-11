@@ -404,7 +404,14 @@ export class PurchaseFormComponent implements OnInit {
             .getAll({
               filterList: [
                 {
-                  columnName: ['name', 'sku', 'brand', 'variants.sku', 'variants.sizeLabel'],
+                  columnName: [
+                    'name',
+                    'sku',
+                    'brand',
+                    'variants.sku',
+                    'variants.barcode',
+                    'variants.sizeLabel',
+                  ],
                   type: 'search',
                   value: search,
                 },
