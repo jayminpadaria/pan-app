@@ -68,6 +68,6 @@ export const allMenu: readonly AppMenuItem[] = [
     link: '/app/customers',
     icon: 'bi-person-vcard',
     isEnabled: true,
-    roles: ['admin', 'manager'],
+    roles: ['admin'],
   },
 ];
