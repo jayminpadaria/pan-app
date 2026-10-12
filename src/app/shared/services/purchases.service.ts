@@ -30,4 +30,10 @@ export class PurchasesService {
   updateStatus(id: string, status: string) {
     return this.http.put<ApiResponseFormat>(`${API_URL}/update-status/${id}`, { status });
   }
+
+  getNextId() {
+    return this.http.get<ApiResponseFormat & { result?: { nextId: string } }>(
+      `${API_URL}/invoice-number`,
+    );
+  }
 }

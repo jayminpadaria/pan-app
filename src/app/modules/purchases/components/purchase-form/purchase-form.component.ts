@@ -166,13 +166,13 @@ export class PurchaseFormComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((sourceType) => {
         if (sourceType === SOURCE_TYPE.INTERNAL_PRODUCTION) {
-          this.form.controls.invoiceNumber.setValue(this.generateInvoiceNumber());
+          this.loadNextInvoiceNumber();
         }
       });
 
     this.purchaseId = this.route.snapshot.paramMap.get('id');
     if (!this.purchaseId) {
-      this.form.controls.invoiceNumber.setValue(this.generateInvoiceNumber());
+      this.loadNextInvoiceNumber();
       this.addItem();
       return;
     }
@@ -521,11 +521,19 @@ export class PurchaseFormComponent implements OnInit {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   }
 
-  private generateInvoiceNumber() {
-    const now = new Date();
-    const pad = (value: number) => String(value).padStart(2, '0');
-    return `INV-${pad(now.getDate())}${pad(now.getMonth() + 1)}${now.getFullYear()}${pad(
-      now.getHours(),
-    )}${pad(now.getMinutes())}`;
+  private loadNextInvoiceNumber() {
+    this.purchasesService.getNextId().subscribe({
+      next: (response: any) => {
+        const nextId = response.result?.invoiceNumber.trim();
+        if (!nextId) {
+          this.notification.error('Failed to generate invoice number.');
+          return;
+        }
+        if (this.form.controls.sourceType.value === SOURCE_TYPE.INTERNAL_PRODUCTION) {
+          this.form.controls.invoiceNumber.setValue(nextId);
+        }
+      },
+      error: () => this.notification.error('Failed to generate invoice number.'),
+    });
   }
 }
