@@ -54,7 +54,6 @@ export class ProductsService {
   printVariantLabel(
     variantId: string,
     label: {
-      batchNumber: string;
       mfdDate: string;
       expDate: string;
       mrp: number;

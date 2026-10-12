@@ -174,7 +174,6 @@
               <thead>
                 <tr>
                   <th scope="col">Product / variant</th>
-                  <th scope="col">Batch</th>
                   <th scope="col">Available</th>
                   <th scope="col">Qty</th>
                   <th scope="col">Price</th>
@@ -187,7 +186,6 @@
                 @for (item of items.controls; track item; let i = $index) {
                   <tr [formGroupName]="i">
                     <td class="fw-semibold">{{ item.controls.productName.value }}</td>
-                    <td>{{ item.controls.batchNumber.value }}</td>
                     <td>{{ item.controls.availableQty.value }}</td>
                     <td class="quantity-cell">
                       @if (isInlineEditing(item, 'quantity')) {
@@ -304,7 +302,7 @@
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="8" class="text-center text-muted p-4">
+                    <td colspan="7" class="text-center text-muted p-4">
                       No items yet. Scan a product barcode to get started.
                     </td>
                   </tr>

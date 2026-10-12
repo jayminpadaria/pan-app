@@ -53,7 +53,6 @@
             <tr>
               <th scope="col">Product</th>
               <th scope="col">Variant</th>
-              <th scope="col">Batch</th>
               <th scope="col">Quantity</th>
               <th scope="col">Cost / unit</th>
               <th scope="col">Retail price</th>
@@ -66,7 +65,6 @@
               <tr>
                 <td>{{ productName(item) }}</td>
                 <td>{{ variantLabel(item) }}</td>
-                <td>{{ item.batchNumber }}</td>
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.costPrice | number: '1.2-2' }}</td>
                 <td>{{ item.retailPrice | number: '1.2-2' }}</td>
@@ -75,13 +73,13 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="8" class="text-center text-muted p-4">No purchase items.</td>
+                <td colspan="7" class="text-center text-muted p-4">No purchase items.</td>
               </tr>
             }
           </tbody>
           <tfoot>
             <tr>
-              <th colspan="7" class="text-end">Total cost</th>
+              <th colspan="6" class="text-end">Total cost</th>
               <th>{{ record.totalCostAmount | number: '1.2-2' }}</th>
             </tr>
           </tfoot>

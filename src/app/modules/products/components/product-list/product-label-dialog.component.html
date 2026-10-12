@@ -4,17 +4,6 @@
     <p class="mb-0">{{ data.productName }} — {{ data.sku }}</p>
 
     <div class="col-12">
-      <label for="label-batch-number" class="form-label">Batch number</label>
-      <input
-        id="label-batch-number"
-        class="form-control"
-        formControlName="batchNumber"
-        [class.is-invalid]="isInvalid('batchNumber')"
-      />
-      <div class="invalid-feedback">Batch number is required.</div>
-    </div>
-
-    <div class="col-12">
       <label for="label-mfd-date" class="form-label">Manufacturing date</label>
       <input
         id="label-mfd-date"

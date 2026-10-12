@@ -1,7 +1,6 @@
 export interface Stock {
   _id: string;
   productId: string;
-  batchNumber: string;
   costPrice: number;
   retailPrice: number;
   receivedQty: number;

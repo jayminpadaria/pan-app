@@ -81,7 +81,6 @@
             <tr>
               <th scope="col">Product</th>
               <th scope="col">Variant</th>
-              <th scope="col">Stock batch</th>
               <th scope="col">Quantity</th>
               <th scope="col">Cost at sale</th>
               <th scope="col">Sold price</th>
@@ -94,7 +93,6 @@
               <tr>
                 <td>{{ productName(item) }}</td>
                 <td>{{ variantLabel(item) }}</td>
-                <td class="text-break">{{ item.stock?.batchNumber ?? item.productStockId }}</td>
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.costPriceAtSale | number: '1.2-2' }}</td>
                 <td>{{ item.soldPrice | number: '1.2-2' }}</td>
@@ -103,7 +101,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="8" class="text-center text-muted p-4">No sale items.</td>
+                <td colspan="7" class="text-center text-muted p-4">No sale items.</td>
               </tr>
             }
           </tbody>

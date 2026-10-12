@@ -44,7 +44,6 @@ export interface SalesItem {
   };
   stock?: {
     _id: string;
-    batchNumber: string;
     availableQty?: number;
     isActive?: boolean;
     isDeleted?: boolean;

@@ -3,7 +3,6 @@ import { Product, ProductVariant } from './product.interface';
 export interface ProductStock {
   _id: string;
   productId: string;
-  batchNumber: string;
   costPrice: number;
   retailPrice: number;
   receivedQty: number;

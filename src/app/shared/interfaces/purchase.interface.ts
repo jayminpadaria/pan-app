@@ -19,7 +19,6 @@ export interface PurchaseItem {
   _id?: string;
   productId: string;
   productVariantId: string;
-  batchNumber: string;
   quantity: number;
   costPrice: number; // Total cost to produce or buy 1 unit
   retailPrice: number; // Intended base selling price

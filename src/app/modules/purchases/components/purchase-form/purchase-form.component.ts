@@ -39,7 +39,6 @@ interface PurchaseItemControls {
   productId: FormControl<string>;
   productVariantId: FormControl<string>;
   productSearch: FormControl<string>;
-  batchNumber: FormControl<string>;
   quantity: FormControl<number>;
   costPrice: FormControl<number>;
   retailPrice: FormControl<number>;
@@ -108,7 +107,7 @@ export class PurchaseFormComponent implements OnInit {
       SOURCE_TYPE.INTERNAL_PRODUCTION,
       Validators.required,
     ),
-    supplierId: [''],
+    supplierId: ['', Validators.required],
     status: ['PENDING', Validators.required],
     transactionDate: [today(), Validators.required],
     items: this.formBuilder.array<FormGroup<PurchaseItemControls>>([], Validators.minLength(1)),
@@ -211,10 +210,6 @@ export class PurchaseFormComponent implements OnInit {
         productId: [item?.productId ?? '', Validators.required],
         productVariantId: [item?.productVariantId ?? '', Validators.required],
         productSearch: [item?.productId ?? ''],
-        batchNumber: [
-          item?.batchNumber ?? this.batchNumberFor(this.form.controls.transactionDate.value),
-          [Validators.required, Validators.pattern(/^B-\d{6}$/)],
-        ],
         quantity: [item?.quantity ?? 1, [Validators.required, Validators.min(1)]],
         costPrice: [item?.costPrice ?? 0, [Validators.required, Validators.min(0)]],
         retailPrice: [item?.retailPrice ?? 0, [Validators.required, Validators.min(0)]],
@@ -335,7 +330,6 @@ export class PurchaseFormComponent implements OnInit {
         ...(item._id.trim() ? { _id: item._id.trim() } : {}),
         productId: item.productId.trim(),
         productVariantId: item.productVariantId.trim(),
-        batchNumber: item.batchNumber.trim(),
         quantity: item.quantity,
         costPrice: item.costPrice,
         retailPrice: item.retailPrice,
@@ -525,11 +519,6 @@ export class PurchaseFormComponent implements OnInit {
     }
     const pad = (part: number) => String(part).padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  }
-
-  private batchNumberFor(date: string) {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-    return match ? `B-${match[1].slice(-2)}${match[2]}${match[3]}` : '';
   }
 
   private generateInvoiceNumber() {

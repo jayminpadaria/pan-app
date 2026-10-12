@@ -29,7 +29,6 @@ interface SalesItemControls {
   productVariantId: FormControl<string>;
   productStockId: FormControl<string>;
   productName: FormControl<string>;
-  batchNumber: FormControl<string>;
   availableQty: FormControl<number>;
   originalQuantity: FormControl<number>;
   quantity: FormControl<number>;
@@ -484,7 +483,6 @@ export class SalesFormComponent implements OnInit {
             ? `${saleItem.product.name} — ${saleItem.variant.sku}`
             : `${saleItem.productId} — ${saleItem.productVariantId}`,
         ],
-        batchNumber: [saleItem.stock?.batchNumber ?? saleItem.productStockId],
         availableQty: [availableQty],
         originalQuantity: [saleItem.quantity],
         quantity: [
@@ -536,7 +534,6 @@ export class SalesFormComponent implements OnInit {
         productVariantId: [variant._id],
         productStockId: [batch._id],
         productName: [`${product.name} — ${variant.sku}`],
-        batchNumber: [batch.batchNumber],
         availableQty: [batch.availableQty],
         originalQuantity: [0],
         quantity: [1, [Validators.required, Validators.min(1), Validators.max(batch.availableQty)]],
