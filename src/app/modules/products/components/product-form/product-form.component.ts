@@ -52,7 +52,7 @@ export class ProductFormComponent implements OnInit {
   readonly form = this.formBuilder.group({
     name: ['', Validators.required],
     sku: [''],
-    brand: [''],
+    brand: ['Rich Mukhwas'],
     categories: this.formBuilder.control<string[]>([]),
     variants: this.formBuilder.array<FormGroup<ProductVariantControls>>([]),
   });
