@@ -1,3 +1,12 @@
+export enum INVENTORY_UNIT {
+  MILLIGRAM = 'mg',
+  GRAM = 'gm',
+  KILOGRAM = 'kg',
+  MILLILITER = 'ml',
+  LITER = 'l',
+  PIECE = 'piece',
+}
+
 export interface Product {
   _id: string;
   name: string;

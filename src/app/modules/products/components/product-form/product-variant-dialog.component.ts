@@ -2,7 +2,10 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { ProductVariantInput } from '../../../../shared/interfaces/product.interface';
+import {
+  INVENTORY_UNIT,
+  ProductVariantInput,
+} from '../../../../shared/interfaces/product.interface';
 
 interface ProductVariantDialogData {
   variant?: ProductVariantInput;
@@ -18,6 +21,7 @@ export class ProductVariantDialogComponent {
   private readonly formBuilder = inject(FormBuilder).nonNullable;
   private readonly dialogRef = inject(MatDialogRef<ProductVariantDialogComponent>);
   readonly data = inject<ProductVariantDialogData>(MAT_DIALOG_DATA);
+  readonly inventoryUnits = Object.entries(INVENTORY_UNIT);
 
   readonly form = this.formBuilder.group({
     sku: [this.data.variant?.sku ?? '', Validators.required],
@@ -32,6 +36,20 @@ export class ProductVariantDialogComponent {
   isInvalid(name: keyof typeof this.form.controls) {
     const control = this.form.controls[name];
     return control.invalid && (control.dirty || control.touched);
+  }
+
+  uppercaseSku(event: Event) {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const cursorPosition = input.selectionStart;
+    const uppercaseValue = input.value.toUpperCase();
+    if (input.value !== uppercaseValue) {
+      this.form.controls.sku.setValue(uppercaseValue);
+      input.setSelectionRange(cursorPosition, cursorPosition);
+    }
   }
 
   save() {
