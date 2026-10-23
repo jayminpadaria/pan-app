@@ -43,6 +43,15 @@ export class ProductsService {
     );
   }
 
+  updateBarcode(productId: string, variantId: string, barcode: string) {
+    return this.http.put<ApiResponseFormat>(
+      `${API_URL}/${productId}/update/variant/${variantId}/barcode`,
+      {
+        barcode,
+      },
+    );
+  }
+
   addVariant(id: string, variant: ProductVariantInput) {
     return this.http.post<ApiResponseFormat>(`${API_URL}/${id}/add/variant`, variant);
   }
@@ -60,10 +69,7 @@ export class ProductsService {
       printQty: number;
     },
   ) {
-    return this.http.post<ApiResponseFormat>(
-      `${API_URL}/variants/${variantId}/print-label`,
-      label,
-    );
+    return this.http.post<ApiResponseFormat>(`${API_URL}/variants/${variantId}/print-label`, label);
   }
 
   downloadBarcodesPdf() {

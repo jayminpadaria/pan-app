@@ -1,0 +1,26 @@
+.idle-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 50%);
+}
+
+.idle-prompt {
+  width: min(100%, 420px);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 20%);
+  text-align: center;
+}
+
+.idle-prompt h2 {
+  margin-bottom: 0.75rem;
+}
+
+.idle-prompt p {
+  margin-bottom: 1.25rem;
+}

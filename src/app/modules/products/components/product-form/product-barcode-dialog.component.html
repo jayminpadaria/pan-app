@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>Edit barcode</h2>
+<form [formGroup]="form" (ngSubmit)="save()">
+  <div mat-dialog-content class="row g-3">
+    <p class="mb-0">{{ data.productName }} — {{ data.sku }}</p>
+
+    <div class="col-12">
+      <label for="variant-barcode" class="form-label">Barcode number</label>
+      <input id="variant-barcode" class="form-control" formControlName="barcode" />
+      <div class="form-text">Leave blank to remove the barcode.</div>
+    </div>
+  </div>
+
+  <div mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit">Save barcode</button>
+  </div>
+</form>

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { tap } from 'rxjs';
+import { map, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponseFormat } from '../interfaces/api-response.interface';
 import { Login } from '../interfaces/login.interface';
@@ -25,6 +25,44 @@ export class AuthService {
         this._loggedIn.set(true);
       }),
     );
+  }
+
+  refreshToken() {
+    const refreshToken = this.getReferenceToken();
+    if (!refreshToken) {
+      return throwError(() => new Error('No refresh token is available.'));
+    }
+
+    return this.http
+      .post<ApiResponseFormat>(`${environment.apiUrl}/auth/refresh-token`, { token: refreshToken })
+      .pipe(
+        map((response) => {
+          const currentIdentity = this.getUserIdentity();
+          const result = response.result;
+          if (
+            !currentIdentity ||
+            !result ||
+            typeof result !== 'object' ||
+            !('token' in result) ||
+            typeof result.token !== 'string' ||
+            !result.token
+          ) {
+            throw new Error('The refresh-token response did not contain a valid token.');
+          }
+
+          const identity: Login = {
+            ...currentIdentity,
+            token: result.token,
+            refreshToken:
+              'refreshToken' in result && typeof result.refreshToken === 'string'
+                ? result.refreshToken
+                : currentIdentity.refreshToken,
+          };
+          console.log('Refreshed identity:', identity);
+          localStorage.setItem(AUTH_KEY, JSON.stringify(identity));
+          return identity;
+        }),
+      );
   }
 
   logout() {

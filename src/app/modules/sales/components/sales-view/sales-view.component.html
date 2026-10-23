@@ -82,7 +82,6 @@
               <th scope="col">Product</th>
               <th scope="col">Variant</th>
               <th scope="col">Quantity</th>
-              <th scope="col">Cost at sale</th>
               <th scope="col">Sold price</th>
               <th scope="col">Discount</th>
               <th scope="col">Line total</th>
@@ -94,7 +93,6 @@
                 <td>{{ productName(item) }}</td>
                 <td>{{ variantLabel(item) }}</td>
                 <td>{{ item.quantity }}</td>
-                <td>{{ item.costPriceAtSale | number: '1.2-2' }}</td>
                 <td>{{ item.soldPrice | number: '1.2-2' }}</td>
                 <td>{{ item.discountAmount | number: '1.2-2' }}</td>
                 <td class="fw-semibold">{{ lineTotal(item) | number: '1.2-2' }}</td>

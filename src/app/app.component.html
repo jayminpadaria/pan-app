@@ -1,1 +1,28 @@
 <router-outlet />
+
+@if (showIdlePrompt()) {
+  <div class="idle-prompt-backdrop">
+    <section
+      class="idle-prompt"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="idle-prompt-title"
+      aria-describedby="idle-prompt-message"
+    >
+      <h2 id="idle-prompt-title">Still there?</h2>
+      <p id="idle-prompt-message">
+        Your session will expire in
+        <strong aria-live="polite">{{ countdown() }} seconds</strong>
+        due to inactivity.
+      </p>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="refreshing()"
+        (click)="continueSession()"
+      >
+        {{ refreshing() ? 'Refreshing session...' : 'Continue session' }}
+      </button>
+    </section>
+  </div>
+}

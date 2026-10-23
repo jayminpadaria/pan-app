@@ -13,9 +13,15 @@ import {
 import { CategoriesService } from '../../../../shared/services/categories.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
 import { ProductsService } from '../../../../shared/services/products.service';
+import {
+  ProductBarcodeDialogComponent,
+  ProductBarcodeDialogResult,
+} from './product-barcode-dialog.component';
 import { ProductVariantDialogComponent } from './product-variant-dialog.component';
+import { ApiResponseFormat } from '../../../../shared/interfaces/api-response.interface';
 
 interface ProductVariantControls {
+  barcode: FormControl<string>;
   sku: FormControl<string>;
   weight: FormControl<number>;
   unit: FormControl<string>;
@@ -48,6 +54,7 @@ export class ProductFormComponent implements OnInit {
   private readonly variantIds = new WeakMap<FormGroup<ProductVariantControls>, string | null>();
   private readonly inUseVariants = new WeakSet<FormGroup<ProductVariantControls>>();
   readonly savingVariant = signal(false);
+  readonly editingBarcodeVariantId = signal<string | null>(null);
 
   readonly form = this.formBuilder.group({
     name: ['', Validators.required],
@@ -101,6 +108,7 @@ export class ProductFormComponent implements OnInit {
 
   private addVariant(variant?: ProductVariant) {
     const group = this.formBuilder.group({
+      barcode: [variant?.barcode ?? ''],
       sku: [variant?.sku ?? '', Validators.required],
       weight: [variant?.weight ?? 0, [Validators.required, Validators.min(0)]],
       unit: [variant?.unit ?? '', Validators.required],
@@ -132,8 +140,12 @@ export class ProductFormComponent implements OnInit {
         return;
       }
 
+      const variantPayload = variant
+        ? { ...payload, barcode: variant.controls.barcode.value }
+        : payload;
+
       if (variant && (!this.isEdit() || !this.getVariantId(variant))) {
-        variant.patchValue(payload);
+        variant.patchValue(variantPayload);
         return;
       }
 
@@ -142,8 +154,53 @@ export class ProductFormComponent implements OnInit {
         return;
       }
 
-      this.persistVariant(variant, payload);
+      this.persistVariant(variant, variantPayload);
     });
+  }
+
+  editVariantBarcode(variant: FormGroup<ProductVariantControls>) {
+    const productId = this.productId;
+    const variantId = this.getVariantId(variant);
+    if (
+      !productId ||
+      !variantId ||
+      this.isVariantInUse(variant) ||
+      this.savingVariant() ||
+      this.editingBarcodeVariantId() !== null
+    ) {
+      return;
+    }
+
+    this.dialog
+      .open(ProductBarcodeDialogComponent, {
+        width: 'min(420px, 95vw)',
+        maxWidth: '95vw',
+        data: {
+          productName: this.form.controls.name.value,
+          sku: variant.controls.sku.value,
+          barcode: variant.controls.barcode.value,
+        },
+      })
+      .afterClosed()
+      .subscribe((result?: ProductBarcodeDialogResult | null) => {
+        if (!result) {
+          return;
+        }
+
+        const { barcode } = result;
+        this.editingBarcodeVariantId.set(variantId);
+        this.productsService.updateBarcode(productId, variantId, barcode).subscribe({
+          next: (res: ApiResponseFormat) => {
+            variant.controls.barcode.setValue(barcode);
+            this.notification.success(res.message);
+            this.editingBarcodeVariantId.set(null);
+          },
+          error: (err: any) => {
+            this.notification.error(err?.error?.message || 'Failed to update variant barcode.');
+            this.editingBarcodeVariantId.set(null);
+          },
+        });
+      });
   }
 
   removeVariant(index: number) {
@@ -188,11 +245,7 @@ export class ProductFormComponent implements OnInit {
     variant: FormGroup<ProductVariantControls> | undefined,
     payload: ProductVariantInput,
   ) {
-    if (
-      !this.productId ||
-      this.savingVariant() ||
-      (variant && this.isVariantInUse(variant))
-    ) {
+    if (!this.productId || this.savingVariant() || (variant && this.isVariantInUse(variant))) {
       return;
     }
 

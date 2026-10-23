@@ -93,6 +93,7 @@
               <thead>
                 <tr>
                   <th scope="col">SKU</th>
+                  <th scope="col">Barcode</th>
                   <th scope="col">Weight</th>
                   <th scope="col">Unit</th>
                   <th scope="col" class="text-end">Actions</th>
@@ -106,11 +107,43 @@
                 ) {
                   <tr>
                     <td>{{ variant.controls.sku.value }}</td>
-                    <td>{{ variant.controls.weight.value }}</td>
-                    <td>{{ variant.controls.unit.value }}</td>
-                    <td class="text-end text-nowrap">
+                  <td>{{ variant.controls.barcode.value || '—' }}</td>
+                  <td>{{ variant.controls.weight.value }}</td>
+                  <td>{{ variant.controls.unit.value }}</td>
+                  <td class="text-end text-nowrap">
+                    @if (getVariantId(variant)) {
                       <button
                         mat-icon-button
+                        type="button"
+                        [attr.aria-label]="'Edit barcode for variant ' + (i + 1)"
+                        [attr.title]="
+                          isVariantInUse(variant)
+                            ? 'Variant is in use'
+                            : editingBarcodeVariantId() === getVariantId(variant)
+                              ? 'Saving barcode...'
+                              : 'Edit barcode'
+                        "
+                        [disabled]="
+                          savingVariant() ||
+                          editingBarcodeVariantId() !== null ||
+                          isVariantInUse(variant)
+                        "
+                        (click)="editVariantBarcode(variant)"
+                      >
+                        <i
+                          class="bi"
+                          [class.bi-pencil-square]="
+                            editingBarcodeVariantId() !== getVariantId(variant)
+                          "
+                          [class.bi-hourglass-split]="
+                            editingBarcodeVariantId() === getVariantId(variant)
+                          "
+                          aria-hidden="true"
+                        ></i>
+                      </button>
+                    }
+                    <button
+                      mat-icon-button
                         type="button"
                         [attr.aria-label]="
                           isVariantInUse(variant)
@@ -118,7 +151,11 @@
                             : 'Edit variant ' + (i + 1)
                         "
                         [attr.title]="isVariantInUse(variant) ? 'Variant is in use' : 'Edit variant'"
-                        [disabled]="savingVariant() || isVariantInUse(variant)"
+                        [disabled]="
+                          savingVariant() ||
+                          editingBarcodeVariantId() !== null ||
+                          isVariantInUse(variant)
+                        "
                         (click)="openVariantDialog(variant)"
                       >
                         <i class="bi bi-pencil me-1" aria-hidden="true"></i>
@@ -134,7 +171,11 @@
                         [attr.title]="
                           isVariantInUse(variant) ? 'Variant is in use' : 'Remove variant'
                         "
-                        [disabled]="savingVariant() || isVariantInUse(variant)"
+                        [disabled]="
+                          savingVariant() ||
+                          editingBarcodeVariantId() !== null ||
+                          isVariantInUse(variant)
+                        "
                         (click)="removeVariant(i)"
                       >
                         <i class="bi bi-trash" aria-hidden="true"></i>
@@ -143,7 +184,7 @@
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="6" class="text-center text-muted">No variants added.</td>
+                    <td colspan="5" class="text-center text-muted">No variants added.</td>
                   </tr>
                 }
               </tbody>
