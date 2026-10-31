@@ -1,0 +1,148 @@
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3">
+    <h4 class="mb-0">{{ isEdit() ? 'Edit Bill of Materials' : 'Add Bill of Materials' }}</h4>
+  </div>
+
+  @if (loadingBom() || loadingProducts()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <form [formGroup]="form" (ngSubmit)="save()">
+    <div class="card-body">
+      <fieldset [disabled]="loadingBom() || loadingProducts() || saving()">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="bom-product">Product</label>
+            <select
+              id="bom-product"
+              class="form-select"
+              formControlName="productId"
+              (change)="onOutputProductChange()"
+            >
+              <option value="">Select a product</option>
+              @for (product of products(); track product._id) {
+                <option [value]="product._id">{{ product.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="bom-variant">Product variant</label>
+            <select id="bom-variant" class="form-select" formControlName="productVariantId">
+              <option value="">Select a variant</option>
+              @for (variant of variantsFor(form.controls.productId.value); track variant._id) {
+                <option [value]="variant._id">{{ variant.sku }} ({{ variant.weight }} {{ variant.unit }})</option>
+              }
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="bom-output-quantity">Output quantity</label>
+            <input
+              id="bom-output-quantity"
+              type="number"
+              min="0.000001"
+              step="any"
+              class="form-control"
+              formControlName="outputQuantity"
+            />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="bom-output-unit">Output unit</label>
+            <select id="bom-output-unit" class="form-select" formControlName="outputUnit">
+              @for (unit of units; track unit) {
+                <option [value]="unit">{{ unit }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <div class="form-check mb-2">
+              <input id="bom-active" class="form-check-input" type="checkbox" formControlName="isActive" />
+              <label class="form-check-label" for="bom-active">Active</label>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-4" />
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Components</h5>
+          <button class="btn btn-outline-primary btn-sm" type="button" (click)="addComponent()">
+            Add component
+          </button>
+        </div>
+
+        <div formArrayName="components" class="d-grid gap-3">
+          @for (component of components.controls; track $index; let index = $index) {
+            <div class="border rounded p-3" [formGroupName]="index">
+              <div class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                  <label class="form-label" [for]="'component-product-' + index">Product</label>
+                  <select
+                    class="form-select"
+                    [id]="'component-product-' + index"
+                    formControlName="productId"
+                    (change)="onComponentProductChange(component)"
+                  >
+                    <option value="">Select a product</option>
+                    @for (product of products(); track product._id) {
+                      <option [value]="product._id">{{ product.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-lg-4">
+                  <label class="form-label" [for]="'component-variant-' + index">Variant</label>
+                  <select
+                    class="form-select"
+                    [id]="'component-variant-' + index"
+                    formControlName="productVariantId"
+                  >
+                    <option value="">Select a variant</option>
+                    @for (variant of variantsFor(component.controls.productId.value); track variant._id) {
+                      <option [value]="variant._id">{{ variant.sku }} ({{ variant.weight }} {{ variant.unit }})</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-lg-2">
+                  <label class="form-label" [for]="'component-quantity-' + index">Quantity</label>
+                  <input
+                    class="form-control"
+                    [id]="'component-quantity-' + index"
+                    type="number"
+                    min="0.000001"
+                    step="any"
+                    formControlName="quantity"
+                  />
+                </div>
+                <div class="col-lg-2">
+                  <label class="form-label" [for]="'component-unit-' + index">Unit</label>
+                  <select
+                    class="form-select"
+                    [id]="'component-unit-' + index"
+                    formControlName="inventoryUnit"
+                  >
+                    @for (unit of units; track unit) {
+                      <option [value]="unit">{{ unit }}</option>
+                    }
+                  </select>
+                </div>
+                @if (components.length > 1) {
+                  <div class="col-12 text-end">
+                    <button class="btn btn-outline-danger btn-sm" type="button" (click)="removeComponent(index)">
+                      Remove component
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </fieldset>
+    </div>
+    <div class="card-footer bg-white d-flex justify-content-end gap-2">
+      <button class="btn btn-outline-secondary" type="button" routerLink="/app/bill-of-materials">
+        Cancel
+      </button>
+      <button class="btn btn-primary" type="submit" [disabled]="saving() || loadingBom() || loadingProducts()">
+        {{ saving() ? 'Saving...' : 'Save BOM' }}
+      </button>
+    </div>
+  </form>
+</div>
