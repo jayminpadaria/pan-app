@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Product } from '../../../../shared/interfaces/product.interface';
 import { Purchase, PurchaseItem, SOURCE_TYPE } from '../../../../shared/interfaces/purchase.interface';
@@ -10,11 +11,15 @@ import { NotificationService } from '../../../../shared/services/notification.se
 import { ProductsService } from '../../../../shared/services/products.service';
 import { PurchasesService } from '../../../../shared/services/purchases.service';
 import { SuppliersService } from '../../../../shared/services/suppliers.service';
+import {
+  ProductLabelDialogComponent,
+  ProductLabelInput,
+} from '../../../products/components/product-list/product-label-dialog.component';
 
 @Component({
   selector: 'app-purchase-view',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatProgressBarModule, RouterModule],
+  imports: [CommonModule, MatButtonModule, MatDialogModule, MatProgressBarModule, RouterModule],
   templateUrl: './purchase-view.component.html',
   styleUrl: './purchase-view.component.scss',
 })
@@ -25,11 +30,13 @@ export class PurchaseViewComponent implements OnInit {
   private readonly productsService = inject(ProductsService);
   private readonly suppliersService = inject(SuppliersService);
   private readonly notification = inject(NotificationService);
+  private readonly dialog = inject(MatDialog);
 
   readonly purchase = signal<Purchase | null>(null);
   readonly products = signal<Record<string, Product>>({});
   readonly supplier = signal<Supplier | null>(null);
   readonly loading = signal(false);
+  readonly printingVariantId = signal<string | null>(null);
   private productLookupErrorNotified = false;
 
   ngOnInit() {
@@ -93,8 +100,68 @@ export class PurchaseViewComponent implements OnInit {
     return item.quantity * item.costPrice;
   }
 
+  printItemLabel(purchase: Purchase, item: PurchaseItem) {
+    if (this.printingVariantId() !== null) {
+      return;
+    }
+
+    const variant = this.products()[item.productId]?.variants?.find(
+      (candidate) => candidate._id === item.productVariantId,
+    );
+    const mfdDate = this.dateInput(purchase.transactionDate);
+    const expDate = this.dateInput(item.expiryDate);
+    const defaultPrintQty =
+      Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+
+    this.printingVariantId.set(item.productVariantId);
+    this.dialog
+      .open(ProductLabelDialogComponent, {
+        width: '420px',
+        maxWidth: '95vw',
+        data: {
+          productName: this.productName(item),
+          sku: variant?.sku ?? item.productVariantId,
+          ...(mfdDate ? { mfdDate } : {}),
+          ...(expDate ? { expDate } : {}),
+          mrp: item.retailPrice > 0 ? item.retailPrice : undefined,
+          printQty: defaultPrintQty,
+          lockLabelDetails: true,
+        },
+      })
+      .afterClosed()
+      .subscribe((label?: ProductLabelInput) => {
+        if (!label) {
+          this.printingVariantId.set(null);
+          return;
+        }
+
+        this.productsService.printVariantLabel(item.productVariantId, label).subscribe({
+          next: () => {
+            this.notification.success('Variant label sent to print.');
+            this.printingVariantId.set(null);
+          },
+          error: () => {
+            this.notification.error('Failed to print variant label.');
+            this.printingVariantId.set(null);
+          },
+        });
+      });
+  }
+
   isCompleted() {
     return this.purchase()?.status.trim().toUpperCase() === 'COMPLETED';
+  }
+
+  private dateInput(value: Date | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+    const pad = (part: number) => String(part).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   }
 
   private loadRelatedRecords(purchase: Purchase) {

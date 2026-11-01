@@ -7,6 +7,11 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 interface ProductLabelDialogData {
   productName: string;
   sku: string;
+  mfdDate?: string;
+  expDate?: string;
+  mrp?: number;
+  printQty?: number;
+  lockLabelDetails?: boolean;
 }
 
 export interface ProductLabelInput {
@@ -44,14 +49,25 @@ export class ProductLabelDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<ProductLabelDialogComponent>);
   private readonly destroyRef = inject(DestroyRef);
   readonly data = inject<ProductLabelDialogData>(MAT_DIALOG_DATA);
-  private readonly initialMfdDate = dateInput(new Date());
+  private readonly initialMfdDate = this.data.mfdDate ?? dateInput(new Date());
 
   readonly form = this.formBuilder.group({
     mfdDate: [this.initialMfdDate, Validators.required],
-    expDate: [addMonths(this.initialMfdDate, 6), Validators.required],
-    mrp: [0, [Validators.required, Validators.min(0.01)]],
-    printQty: [1, [Validators.required, Validators.min(1), Validators.pattern(/^[1-9]\d*$/)]],
+    expDate: [this.data.expDate ?? addMonths(this.initialMfdDate, 6), Validators.required],
+    mrp: [this.data.mrp ?? 0, [Validators.required, Validators.min(0.01)]],
+    printQty: [
+      this.data.printQty ?? 1,
+      [Validators.required, Validators.min(1), Validators.pattern(/^[1-9]\d*$/)],
+    ],
   });
+
+  constructor() {
+    if (this.data.lockLabelDetails) {
+      this.form.controls.mfdDate.disable();
+      this.form.controls.expDate.disable();
+      this.form.controls.mrp.disable();
+    }
+  }
 
   ngOnInit() {
     this.form.controls.mfdDate.valueChanges

@@ -16,6 +16,7 @@ export class LoginComponent {
   private readonly notification = inject(NotificationService);
 
   readonly loading = signal(false);
+  readonly showPassword = signal(false);
 
   readonly form = inject(FormBuilder).nonNullable.group({
     username: ['', Validators.required],
@@ -25,6 +26,19 @@ export class LoginComponent {
   isInvalid(name: 'username' | 'password') {
     const control = this.form.controls[name];
     return control.invalid && (control.dirty || control.touched);
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword.update((visible) => !visible);
+  }
+
+  showPasswordResetInfo() {
+    this.notification.openSnackBar(
+      'Please contact your administrator to reset your password.',
+      '',
+      '',
+      4000,
+    );
   }
 
   login() {

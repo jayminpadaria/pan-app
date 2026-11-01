@@ -50,6 +50,19 @@ const today = () => {
   const pad = (value: number) => String(value).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
+
+const sixMonthsFromToday = () => {
+  const todayDate = new Date();
+  const targetMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 6, 1);
+  const lastDayOfTargetMonth = new Date(
+    targetMonth.getFullYear(),
+    targetMonth.getMonth() + 1,
+    0,
+  ).getDate();
+  targetMonth.setDate(Math.min(todayDate.getDate(), lastDayOfTargetMonth));
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${targetMonth.getFullYear()}-${pad(targetMonth.getMonth() + 1)}-${pad(targetMonth.getDate())}`;
+};
 const retailPriceGreaterThanCost: ValidatorFn = (control) => {
   const costValue = control.get('costPrice')?.value;
   const retailValue = control.get('retailPrice')?.value;
@@ -213,7 +226,7 @@ export class PurchaseFormComponent implements OnInit {
         quantity: [item?.quantity ?? 1, [Validators.required, Validators.min(1)]],
         costPrice: [item?.costPrice ?? 0, [Validators.required, Validators.min(0)]],
         retailPrice: [item?.retailPrice ?? 0, [Validators.required, Validators.min(0)]],
-        expiryDate: [this.dateInput(item?.expiryDate)],
+        expiryDate: [this.dateInput(item?.expiryDate) || sixMonthsFromToday()],
       },
       { validators: retailPriceGreaterThanCost },
     );
@@ -333,7 +346,7 @@ export class PurchaseFormComponent implements OnInit {
         quantity: item.quantity,
         costPrice: item.costPrice,
         retailPrice: item.retailPrice,
-        expiryDate: item.expiryDate ? new Date(`${item.expiryDate}T00:00:00.000Z`) : null,
+        expiryDate: new Date(`${item.expiryDate || sixMonthsFromToday()}T00:00:00.000Z`),
       })),
     };
     const request =

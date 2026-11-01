@@ -58,6 +58,7 @@
               <th scope="col">Retail price</th>
               <th scope="col">Expiry date</th>
               <th scope="col">Line total</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -70,16 +71,37 @@
                 <td>{{ item.retailPrice | number: '1.2-2' }}</td>
                 <td>{{ item.expiryDate ? (item.expiryDate | date: 'mediumDate') : '—' }}</td>
                 <td class="fw-semibold">{{ lineTotal(item) | number: '1.2-2' }}</td>
+                <td>
+                  <button
+                    mat-icon-button
+                    type="button"
+                    [disabled]="printingVariantId() !== null"
+                    (click)="printItemLabel(record, item)"
+                    [attr.aria-label]="'Print barcode labels for ' + productName(item)"
+                    [attr.title]="
+                      printingVariantId() === item.productVariantId
+                        ? 'Printing labels...'
+                        : 'Print barcode labels'
+                    "
+                  >
+                    <i
+                      class="bi"
+                      [class.bi-upc-scan]="printingVariantId() !== item.productVariantId"
+                      [class.bi-hourglass-split]="printingVariantId() === item.productVariantId"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="7" class="text-center text-muted p-4">No purchase items.</td>
+                <td colspan="8" class="text-center text-muted p-4">No purchase items.</td>
               </tr>
             }
           </tbody>
           <tfoot>
             <tr>
-              <th colspan="6" class="text-end">Total cost</th>
+              <th colspan="7" class="text-end">Total cost</th>
               <th>{{ record.totalCostAmount | number: '1.2-2' }}</th>
             </tr>
           </tfoot>

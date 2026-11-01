@@ -1,37 +1,97 @@
-<div class="container min-vh-100 d-flex align-items-center justify-content-center">
-  <div class="card shadow-sm w-100" style="max-width: 400px">
-    <div class="card-body p-4">
-      <h3 class="card-title text-center mb-4">Sign in</h3>
+<main class="login-page">
+  <div class="login-card">
+    <section class="brand-panel" aria-label="Rich Mukhwas and more">
+      <p class="brand-note">Small Bites<br />Big Happiness</p>
 
-      <form [formGroup]="form" (ngSubmit)="login()" novalidate>
-        <div class="mb-3">
-          <label for="username" class="form-label">Username</label>
-          <input
-            id="username"
-            type="text"
-            class="form-control"
-            formControlName="username"
-            autocomplete="username"
-            [class.is-invalid]="isInvalid('username')"
-          />
-          <div class="invalid-feedback">Username is required.</div>
+      <div class="brand-logo">
+        <img src="/assets/leaf.jpg" alt="Rich Mukhwas & more" />
+      </div>
+      <p class="brand-motto">TRADITION <span>•</span> TASTE <span>•</span> WELLNESS</p>
+
+      <div class="brand-benefits">
+        <div class="benefit">
+          <i class="bi bi-award" aria-hidden="true"></i>
+          <span>Premium<br />quality</span>
         </div>
-
-        <div class="mb-3">
-          <label for="password" class="form-label">Password</label>
-          <input
-            id="password"
-            type="password"
-            class="form-control"
-            formControlName="password"
-            autocomplete="current-password"
-            [class.is-invalid]="isInvalid('password')"
-          />
-          <div class="invalid-feedback">Password is required.</div>
+        <div class="benefit">
+          <i class="bi bi-leaf" aria-hidden="true"></i>
+          <span>Natural<br />ingredients</span>
         </div>
+        <div class="benefit">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+          <span>Traditional<br />goodness</span>
+        </div>
+        <div class="benefit">
+          <i class="bi bi-brightness-high" aria-hidden="true"></i>
+          <span>A healthier<br />tomorrow</span>
+        </div>
+      </div>
+    </section>
 
-        <button type="submit" class="btn btn-primary w-100" [disabled]="loading()">Login</button>
-      </form>
-    </div>
+    <section class="login-panel">
+      <div class="login-content">
+        <p class="eyebrow">Welcome Back</p>
+        <h1>Login to Your Account</h1>
+        <p class="login-intro">Continue to explore the world of<br />Rich Mukhwas &amp; More</p>
+
+        <form [formGroup]="form" (ngSubmit)="login()" novalidate>
+          <div class="field-group">
+            <label for="username">Email Address</label>
+            <div class="input-shell" [class.input-invalid]="isInvalid('username')">
+              <i class="bi bi-envelope" aria-hidden="true"></i>
+              <input
+                id="username"
+                type="text"
+                formControlName="username"
+                autocomplete="username"
+                placeholder="Enter your email address"
+                [attr.aria-invalid]="isInvalid('username')"
+                aria-describedby="username-error"
+              />
+            </div>
+            @if (isInvalid('username')) {
+              <p id="username-error" class="field-error">Email address is required.</p>
+            }
+          </div>
+
+          <div class="field-group">
+            <label for="password">Password</label>
+            <div class="input-shell" [class.input-invalid]="isInvalid('password')">
+              <i class="bi bi-lock" aria-hidden="true"></i>
+              <input
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="current-password"
+                placeholder="Enter your password"
+                [attr.aria-invalid]="isInvalid('password')"
+                aria-describedby="password-error"
+              />
+              <button
+                class="password-toggle"
+                type="button"
+                (click)="togglePasswordVisibility()"
+                [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+              >
+                <i
+                  class="bi"
+                  [class.bi-eye]="!showPassword()"
+                  [class.bi-eye-slash]="showPassword()"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            </div>
+            @if (isInvalid('password')) {
+              <p id="password-error" class="field-error">Password is required.</p>
+            }
+          </div>
+
+          <button type="submit" class="login-button" [disabled]="loading()">
+            <span>{{ loading() ? 'Signing in...' : 'Login' }}</span>
+            <i class="bi bi-arrow-right" aria-hidden="true"></i>
+          </button>
+        </form>
+      </div>
+    </section>
   </div>
-</div>
+</main>
