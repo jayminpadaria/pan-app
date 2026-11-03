@@ -24,6 +24,8 @@ export interface ProductVariant {
   weight: number;
   unit: string;
   isInUse?: boolean;
+  costPrice?: number;
+  retailPrice?: number;
 }
 
 export type ProductVariantInput = Omit<ProductVariant, '_id'>;

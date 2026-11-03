@@ -1,0 +1,290 @@
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0">Sales returns</h4>
+      @if (sale(); as record) {
+        <small class="text-muted">Invoice {{ record.orderNumber }}</small>
+      }
+    </div>
+    <div class="d-flex gap-2">
+      @if (sale(); as record) {
+        <button
+          mat-stroked-button
+          type="button"
+          [routerLink]="['/app/sales', record._id, 'returns', 'view']"
+        >
+          Return bills
+        </button>
+      }
+      <button mat-stroked-button type="button" routerLink="/app/sales">Back to sales</button>
+    </div>
+  </div>
+
+  @if (loadingSale()) {
+    <mat-progress-bar mode="indeterminate" />
+  } @else if (sale(); as record) {
+    <div class="card-body">
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Invoice</div>
+          <strong>{{ record.orderNumber }}</strong>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Customer</div>
+          <strong>
+            {{
+              record.customer
+                ? record.customer.firstName + ' ' + record.customer.lastName
+                : record.customerId || 'Walk-in'
+            }}
+          </strong>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Invoice date</div>
+          <strong>{{ record.salesDate | date: 'mediumDate' }}</strong>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Invoice total</div>
+          <strong>{{ record.grandTotal | number: '1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <section class="mb-4" aria-labelledby="return-history-title">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 id="return-history-title" class="mb-0">Previous returns</h5>
+          <span class="text-muted">{{ returns().length }} return(s)</span>
+        </div>
+        @if (returns().length > 0) {
+          <div
+            class="alert alert-info d-flex flex-wrap justify-content-between align-items-center gap-2"
+          >
+            <span>
+              Total refunded:
+              <strong>{{ totalReturned() | number: '1.2-2' }}</strong>
+            </span>
+            <span
+              class="badge"
+              [class.text-bg-warning]="returnStatus() === returnStatuses.PARTIALLY_RETURNED"
+              [class.text-bg-success]="returnStatus() === returnStatuses.FULLY_RETURNED"
+            >
+              {{ returnStatus() }}
+            </span>
+          </div>
+        }
+        @if (loadingReturns()) {
+          <mat-progress-bar mode="indeterminate" />
+        } @else if (returnsLoadError()) {
+          <div class="alert alert-warning d-flex justify-content-between align-items-center">
+            <span
+              >Return history could not be loaded. Creating a return is disabled until it
+              loads.</span
+            >
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              (click)="retryLoadingReturns()"
+            >
+              Retry
+            </button>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Return number</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Payment method</th>
+                  <th scope="col">Items</th>
+                  <th scope="col" class="text-end">Refunded</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (salesReturn of returns(); track salesReturn._id) {
+                  <tr>
+                    <td>{{ salesReturn.salesReturnNumber }}</td>
+                    <td>{{ salesReturn.returnDate | date: 'mediumDate' }}</td>
+                    <td>{{ salesReturn.paymentMethod || 'Not recorded' }}</td>
+                    <td>{{ salesReturn.items.length }}</td>
+                    <td class="text-end">
+                      {{ salesReturn.totalRefundedToCustomer | number: '1.2-2' }}
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">No returns for this invoice.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      @if (!loadingReturns() && !returnsLoadError() && hasReturnableItems()) {
+        <form [formGroup]="form" (ngSubmit)="saveReturn()" novalidate>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h5 class="mb-0">Create a return</h5>
+              <small class="text-muted">Select returned items and enter the refund details.</small>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label for="sales-return-number" class="form-label">Return number</label>
+              <input
+                id="sales-return-number"
+                class="form-control"
+                formControlName="salesReturnNumber"
+                [class.is-invalid]="
+                  form.controls.salesReturnNumber.invalid && form.controls.salesReturnNumber.touched
+                "
+              />
+              <div class="invalid-feedback">Return number is required.</div>
+            </div>
+            <div class="col-md-4">
+              <label for="sales-return-date" class="form-label">Return date</label>
+              <input
+                id="sales-return-date"
+                type="date"
+                class="form-control"
+                formControlName="returnDate"
+                [class.is-invalid]="
+                  form.controls.returnDate.invalid && form.controls.returnDate.touched
+                "
+              />
+              <div class="invalid-feedback">Return date is required.</div>
+            </div>
+            <div class="col-md-4">
+              <label for="sales-return-payment-method" class="form-label">Refund method</label>
+              <select
+                id="sales-return-payment-method"
+                class="form-select"
+                formControlName="paymentMethod"
+              >
+                <option value="CASH">Cash</option>
+                <option value="ONLINE">Online</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+              <thead>
+                <tr>
+                  <th scope="col">Return</th>
+                  <th scope="col">Product / variant</th>
+                  <th scope="col">Sold Qty</th>
+                  <th scope="col">Previously Returned Qty</th>
+                  <th scope="col">Return Qty</th>
+                  <th scope="col">Amount per unit</th>
+                  <th scope="col">Restock</th>
+                  <th scope="col">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (
+                  row of rows();
+                  track row.saleItem.productStockId + row.saleItem.productVariantId + $index
+                ) {
+                  <tr [formGroup]="row.form">
+                    <td>
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        [formControl]="row.form.controls.selected"
+                        [disabled]="row.remainingQuantity <= 0 || loadingReturns() || saving()"
+                        [attr.aria-label]="'Select ' + productName(row.saleItem) + ' for return'"
+                      />
+                    </td>
+                    <td>
+                      <div class="fw-semibold">{{ productName(row.saleItem) }}</div>
+                      <small class="text-muted">{{ variantName(row.saleItem) }}</small>
+                    </td>
+                    <td>{{ row.saleItem.quantity }}</td>
+                    <td>{{ row.previouslyReturnedQuantity }}</td>
+                    <td>
+                      <input
+                        type="number"
+                        min="1"
+                        [max]="row.remainingQuantity"
+                        step="1"
+                        class="form-control form-control-sm"
+                        formControlName="quantity"
+                        [readOnly]="!row.form.controls.selected.value"
+                        [class.is-invalid]="
+                          row.form.controls.selected.value &&
+                          (row.form.controls.quantity.invalid ||
+                            row.form.controls.quantity.value > row.remainingQuantity)
+                        "
+                      />
+                    </td>
+                    <td>
+                      <span class="form-control-plaintext py-1">
+                        {{ row.form.controls.refundPricePerUnit.value | number: '1.2-2' }}
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        formControlName="restockInventory"
+                        [disabled]="!row.form.controls.selected.value"
+                        [attr.aria-label]="'Restock returned ' + productName(row.saleItem)"
+                      />
+                    </td>
+                    <td>
+                      <select
+                        class="form-select form-select-sm"
+                        formControlName="reason"
+                        [disabled]="!row.form.controls.selected.value"
+                        [class.is-invalid]="
+                          row.form.controls.selected.value && !row.form.controls.reason.value
+                        "
+                        [attr.aria-label]="'Return reason for ' + productName(row.saleItem)"
+                      >
+                        <option value="">Select reason</option>
+                        @for (reason of returnReasons; track reason) {
+                          <option [value]="reason">{{ reason }}</option>
+                        }
+                      </select>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="8" class="text-center text-muted">No invoice items available.</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="7" class="text-end">Total refund</th>
+                  <th class="text-end">{{ refundTotal() | number: '1.2-2' }}</th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              [routerLink]="['/app/sales', record._id, 'view']"
+            >
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit" [disabled]="saving() || loadingReturns()">
+              {{ saving() ? 'Saving return...' : 'Create return' }}
+            </button>
+          </div>
+        </form>
+      }
+      @if (!loadingReturns() && !returnsLoadError() && !hasReturnableItems()) {
+        <div class="alert alert-secondary mb-0">
+          All invoice quantities have been returned. No additional return can be created.
+        </div>
+      }
+    </div>
+  }
+</div>

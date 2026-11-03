@@ -16,7 +16,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Customer, CustomerInput } from '../../../../shared/interfaces/customer.interface';
 import { StockLookupResponse } from '../../../../shared/interfaces/product-stock.interface';
-import { Sales, SalesItem } from '../../../../shared/interfaces/sales.interface';
+import { PAYMENT_STATUS, Sales, SalesItem } from '../../../../shared/interfaces/sales.interface';
 import { AuthService } from '../../../../shared/services/auth.service';
 import { CustomersService } from '../../../../shared/services/customers.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
@@ -77,6 +77,7 @@ export class SalesFormComponent implements OnInit {
   readonly loadingItemDetails = signal(false);
   readonly isEdit = signal(false);
   readonly isAdmin = this.auth.getUserIdentity()?.role?.trim().toLowerCase() === 'admin';
+  readonly paymentStatuses = PAYMENT_STATUS;
   readonly loadingCustomers = signal(false);
   readonly creatingCustomer = signal(false);
   readonly customers = signal<Customer[]>([]);
@@ -90,7 +91,10 @@ export class SalesFormComponent implements OnInit {
   readonly form = this.formBuilder.group({
     customerId: [''],
     salesDate: [today(), Validators.required],
-    paymentStatus: ['UNPAID', Validators.required],
+    paymentStatus: this.formBuilder.control<PAYMENT_STATUS>(
+      PAYMENT_STATUS.UNPAID,
+      Validators.required,
+    ),
     paymentMethod: this.formBuilder.control<'CASH' | 'ONLINE'>('CASH', Validators.required),
     taxAmount: [0, [Validators.required, Validators.min(0)]],
     items: this.formBuilder.array<FormGroup<SalesItemControls>>([], Validators.minLength(1)),
@@ -123,7 +127,7 @@ export class SalesFormComponent implements OnInit {
           this.router.navigate(['/app/sales']);
           return;
         }
-        if (sale.paymentStatus.trim().toUpperCase() === 'PAID') {
+        if (sale.paymentStatus === PAYMENT_STATUS.PAID) {
           this.notification.error('Paid sales cannot be edited.');
           this.loadingSale.set(false);
           this.router.navigate(['/app/sales']);
@@ -344,7 +348,7 @@ export class SalesFormComponent implements OnInit {
       taxAmount: value.taxAmount,
       grandTotal: this.grandTotal(),
       paymentStatus: value.paymentStatus,
-      ...(value.paymentStatus === 'PAID' ? { paymentMethod: value.paymentMethod } : {}),
+      ...(value.paymentStatus === PAYMENT_STATUS.PAID ? { paymentMethod: value.paymentMethod } : {}),
       salesDate: new Date(`${value.salesDate}T${currentUtcTime}`),
     };
 
@@ -455,7 +459,7 @@ export class SalesFormComponent implements OnInit {
       {
         customerId: sale.customerId ?? '',
         salesDate: this.dateInput(sale.salesDate),
-        paymentStatus: sale.paymentStatus.trim().toUpperCase(),
+        paymentStatus: sale.paymentStatus,
         paymentMethod: sale.paymentMethod ?? 'CASH',
         taxAmount: sale.taxAmount,
       },

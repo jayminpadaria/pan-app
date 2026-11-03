@@ -20,6 +20,10 @@ export class ProductsService {
     return this.http.post<ApiListResponseFormat<Product>>(`${API_URL}/list`, request);
   }
 
+  getAllWithRate(request: ListRequest) {
+    return this.http.post<ApiListResponseFormat<Product>>(`${API_URL}/list-with-rate`, request);
+  }
+
   getById(id: string) {
     return this.http.get<ApiResponseFormat & { result?: Product }>(`${API_URL}/${id}`);
   }

@@ -1,3 +1,18 @@
+import type { SalesReturn } from './sales-return.interface';
+
+export enum PAYMENT_STATUS {
+  PAID = 'PAID',
+  UNPAID = 'UNPAID',
+  PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED',
+  FULLY_REFUNDED = 'FULLY_REFUNDED',
+}
+
+export enum SALES_RETURN_STATUS {
+  NONE = 'NONE',
+  PARTIALLY_RETURNED = 'PARTIALLY',
+  FULLY_RETURNED = 'FULL',
+}
+
 export interface Sales {
   _id: string;
   orderNumber?: string;
@@ -13,7 +28,10 @@ export interface Sales {
   subTotal: number;
   taxAmount: number;
   grandTotal: number;
-  paymentStatus: string;
+  paymentStatus: PAYMENT_STATUS;
+  salesReturnStatus?: SALES_RETURN_STATUS;
+  returnedAmount?: number;
+  salesReturns?: SalesReturn[];
   paymentMethod?: 'CASH' | 'ONLINE';
   salesDate: Date;
 }

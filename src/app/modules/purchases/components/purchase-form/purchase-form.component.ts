@@ -270,6 +270,12 @@ export class PurchaseFormComponent implements OnInit {
     item.controls.productId.setValue(product._id);
     item.controls.productVariantId.setValue(variant._id);
     item.controls.productSearch.setValue(label, { emitEvent: false });
+    if (typeof variant.costPrice === 'number' && Number.isFinite(variant.costPrice)) {
+      item.controls.costPrice.setValue(variant.costPrice);
+    }
+    if (typeof variant.retailPrice === 'number' && Number.isFinite(variant.retailPrice)) {
+      item.controls.retailPrice.setValue(variant.retailPrice);
+    }
     this.selectedProductLabels.set(item, label);
   }
 
@@ -408,7 +414,7 @@ export class PurchaseFormComponent implements OnInit {
 
           loading.set(true);
           return this.productsService
-            .getAll({
+            .getAllWithRate({
               filterList: [
                 {
                   columnName: [

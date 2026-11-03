@@ -7,6 +7,24 @@
       }
     </div>
     <div class="d-flex gap-2">
+      @if (sale(); as record) {
+        <button
+          mat-stroked-button
+          type="button"
+          [routerLink]="['/app/sales', record._id, 'returns', 'view']"
+        >
+          <i class="bi bi-receipt me-1" aria-hidden="true"></i>
+          Return bills
+        </button>
+        <button
+          mat-stroked-button
+          type="button"
+          [routerLink]="['/app/sales', record._id, 'returns']"
+        >
+          <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>
+          Manage returns
+        </button>
+      }
       @if (sale()) {
         <button
           mat-stroked-button
@@ -50,11 +68,24 @@
           <div class="detail-label">Payment status</div>
           <span
             class="badge"
-            [class.text-bg-success]="record.paymentStatus.toUpperCase() === 'PAID'"
-            [class.text-bg-warning]="record.paymentStatus.toUpperCase() === 'UNPAID'"
+            [class.text-bg-success]="record.paymentStatus === paymentStatuses.PAID"
+            [class.text-bg-warning]="
+              record.paymentStatus === paymentStatuses.UNPAID ||
+              record.paymentStatus === paymentStatuses.PARTIALLY_REFUNDED
+            "
+            [class.text-bg-secondary]="record.paymentStatus === paymentStatuses.FULLY_REFUNDED"
           >
             {{ record.paymentStatus }}
           </span>
+          @if (
+            returnedAmount(record) > 0 ||
+              (record.salesReturnStatus &&
+                record.salesReturnStatus !== salesReturnStatuses.NONE)
+          ) {
+            <div class="detail-value mt-1">
+              Returned: {{ returnedAmount(record) | number: '1.2-2' }}
+            </div>
+          }
         </div>
         <div class="col-sm-6 col-lg-3">
           <div class="detail-label">Payment method</div>

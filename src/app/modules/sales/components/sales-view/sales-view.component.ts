@@ -3,7 +3,12 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { Sales, SalesItem } from '../../../../shared/interfaces/sales.interface';
+import {
+  PAYMENT_STATUS,
+  SALES_RETURN_STATUS,
+  Sales,
+  SalesItem,
+} from '../../../../shared/interfaces/sales.interface';
 import { NotificationService } from '../../../../shared/services/notification.service';
 import { SalesService } from '../../../../shared/services/sales.service';
 
@@ -23,6 +28,8 @@ export class SalesViewComponent implements OnInit {
   readonly sale = signal<Sales | null>(null);
   readonly loading = signal(false);
   readonly printing = signal(false);
+  readonly paymentStatuses = PAYMENT_STATUS;
+  readonly salesReturnStatuses = SALES_RETURN_STATUS;
 
   ngOnInit() {
     const saleId = this.route.snapshot.paramMap.get('id');
@@ -76,6 +83,16 @@ export class SalesViewComponent implements OnInit {
 
   lineTotal(item: SalesItem) {
     return Math.max(0, item.quantity * item.soldPrice - item.discountAmount);
+  }
+
+  returnedAmount(sale: Sales): number {
+    if (sale.returnedAmount !== undefined) return sale.returnedAmount;
+    return (
+      sale.salesReturns?.reduce(
+        (total, salesReturn) => total + salesReturn.totalRefundedToCustomer,
+        0,
+      ) ?? 0
+    );
   }
 
   printSale() {

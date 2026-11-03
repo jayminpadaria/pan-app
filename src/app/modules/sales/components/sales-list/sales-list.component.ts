@@ -13,7 +13,11 @@ import { RouterModule } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { Customer } from '../../../../shared/interfaces/customer.interface';
 import { ListFilter } from '../../../../shared/interfaces/list.interface';
-import { Sales as Sale } from '../../../../shared/interfaces/sales.interface';
+import {
+  PAYMENT_STATUS,
+  SALES_RETURN_STATUS,
+  Sales as Sale,
+} from '../../../../shared/interfaces/sales.interface';
 import { CustomersService } from '../../../../shared/services/customers.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
 import { SalesService } from '../../../../shared/services/sales.service';
@@ -54,6 +58,7 @@ export class SalesListComponent implements OnInit {
     'paymentStatus',
     'salesDate',
     'actions',
+    'returnsAction',
   ];
   readonly dataSource = new MatTableDataSource<Sale>([]);
   readonly search = new FormControl('', { nonNullable: true });
@@ -63,6 +68,8 @@ export class SalesListComponent implements OnInit {
   readonly limit = signal(10);
   readonly loading = signal(false);
   readonly printingSaleId = signal<string | null>(null);
+  readonly paymentStatuses = PAYMENT_STATUS;
+  readonly salesReturnStatuses = SALES_RETURN_STATUS;
   readonly sortHeader = signal(DEFAULT_SORT.header);
   readonly sortDirection = signal(DEFAULT_SORT.direction);
 
@@ -107,7 +114,15 @@ export class SalesListComponent implements OnInit {
   }
 
   isUnpaid(sale: Sale) {
-    return sale.paymentStatus.trim().toUpperCase() === 'UNPAID';
+    return sale.paymentStatus === PAYMENT_STATUS.UNPAID;
+  }
+
+  isFullyReturned(sale: Sale): boolean {
+    return sale.salesReturnStatus === SALES_RETURN_STATUS.FULLY_RETURNED;
+  }
+
+  returnedAmount(sale: Sale): number {
+    return sale.returnedAmount ?? 0;
   }
 
   printSale(sale: Sale) {

@@ -1,0 +1,126 @@
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+    <div>
+      <h4 class="mb-0">Sales return bills</h4>
+      @if (sale(); as record) {
+        <small class="text-muted">Invoice {{ record.orderNumber }}</small>
+      }
+    </div>
+    <div class="d-flex gap-2">
+      @if (sale(); as record) {
+        <button
+          mat-stroked-button
+          type="button"
+          [routerLink]="['/app/sales', record._id, 'returns']"
+        >
+          Manage returns
+        </button>
+        <button mat-stroked-button type="button" [routerLink]="['/app/sales', record._id, 'view']">
+          Invoice
+        </button>
+      }
+      <button mat-stroked-button type="button" routerLink="/app/sales">Back to sales</button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  } @else if (loadError()) {
+    <div class="card-body">
+      <div class="alert alert-warning d-flex justify-content-between align-items-center mb-0">
+        <span>Return bills could not be loaded.</span>
+        <button
+          class="btn btn-sm btn-outline-secondary"
+          type="button"
+          (click)="retryLoadingReturns()"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  } @else if (sale(); as record) {
+    <div class="card-body">
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Sales invoice</div>
+          <strong>{{ record.orderNumber }}</strong>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Sales ID</div>
+          <strong>{{ record._id }}</strong>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Return bills</div>
+          <strong>{{ returns().length }}</strong>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Total refunded</div>
+          <strong>{{ totalRefunded() | number: '1.2-2' }}</strong>
+        </div>
+      </div>
+
+      @for (salesReturn of returns(); track salesReturn._id) {
+        <section
+          class="border rounded-3 mb-3"
+          [attr.aria-label]="'Return bill ' + salesReturn.salesReturnNumber"
+        >
+          <div
+            class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom p-3"
+          >
+            <div>
+              <h5 class="mb-1">{{ salesReturn.salesReturnNumber }}</h5>
+              <span class="text-muted">{{ salesReturn.returnDate | date: 'mediumDate' }}</span>
+            </div>
+            <div class="text-end">
+              <div class="text-muted small">Refunded to customer</div>
+              <strong>{{ salesReturn.totalRefundedToCustomer | number: '1.2-2' }}</strong>
+              <div class="text-muted small mt-1">
+                Refund method: {{ salesReturn.paymentMethod || 'Not recorded' }}
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Product</th>
+                  <th scope="col">Variant</th>
+                  <th scope="col">Quantity</th>
+                  <th scope="col">Refund per unit</th>
+                  <th scope="col">Refund</th>
+                  <th scope="col">Inventory</th>
+                  <th scope="col">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of salesReturn.items; track item._id ?? $index) {
+                  <tr>
+                    <td>{{ productName(item) }}</td>
+                    <td>{{ variantName(item) }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.refundPricePerUnit | number: '1.2-2' }}</td>
+                    <td>{{ item.quantity * item.refundPricePerUnit | number: '1.2-2' }}</td>
+                    <td>
+                      {{ item.restockInventory ? 'Restocked' : 'Not restocked' }}
+                      {{ item.restockInventory }}
+                    </td>
+                    <td>{{ item.reason }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">
+                      No items in this return bill.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      } @empty {
+        <div class="alert alert-secondary mb-0">No return bills exist for this invoice.</div>
+      }
+    </div>
+  }
+</div>

@@ -9,6 +9,8 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { SalesFormComponent } from './components/sales-form/sales-form.component';
 import { CustomerCreateDialogComponent } from './components/sales-form/customer-create-dialog.component';
+import { SalesReturnsComponent } from './components/sales-returns/sales-returns.component';
+import { SalesReturnViewComponent } from './components/sales-return-view/sales-return-view.component';
 import { SalesRoutingModule } from './sales-routing.module';
 import { Sales } from './pages/sales/sales';
 
@@ -26,6 +28,8 @@ import { Sales } from './pages/sales/sales';
     SalesRoutingModule,
     Sales,
     CustomerCreateDialogComponent,
+    SalesReturnsComponent,
+    SalesReturnViewComponent,
   ],
 })
 export class SalesModule {}
