@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
-import { DailyReportsComponent } from '../../components/daily-reports/daily-reports.component';
+import { MatTabsModule } from '@angular/material/tabs';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 @Component({
-  imports: [DailyReportsComponent],
+  imports: [MatTabsModule, RouterLink, RouterLinkActive, RouterOutlet],
   selector: 'app-reports',
   standalone: true,
   templateUrl: './reports.html',

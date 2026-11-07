@@ -1,3 +1,46 @@
 .table {
   margin-bottom: 0;
 }
+
+.report-period {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.report-total {
+  border-radius: 0.75rem;
+}
+
+.sales-total {
+  background: #f0faf5;
+}
+
+.purchases-total {
+  background: #f3f5ff;
+}
+
+.returns-total {
+  background: #fff5f5;
+}
+
+.report-total-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.daily-report-table {
+  min-width: 1050px;
+  font-size: 0.84rem;
+}
+
+.daily-report-table thead th,
+.daily-report-table tfoot th {
+  white-space: nowrap;
+}
+
+.daily-report-table thead tr:first-child th:not(:first-child) {
+  text-align: center;
+}

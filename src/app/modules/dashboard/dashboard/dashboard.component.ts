@@ -101,18 +101,6 @@ export class DashboardComponent implements OnInit {
     this.loadDashboard();
   }
 
-  onDateChange(event: Event) {
-    const input = event.target;
-    if (!(input instanceof HTMLInputElement) || !input.value) {
-      return;
-    }
-
-    if (input.value !== this.requestedDate()) {
-      this.requestedDate.set(input.value);
-      this.loadDashboard();
-    }
-  }
-
   stockLevel(quantity: number): StockLevel {
     if (quantity <= 0) {
       return 'out-of-stock';

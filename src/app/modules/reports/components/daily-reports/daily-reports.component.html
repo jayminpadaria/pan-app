@@ -1,7 +1,9 @@
-<div class="card shadow-sm border-0">
+<section class="card shadow-sm border-0" aria-labelledby="daily-report-heading">
   <div class="card-header bg-white py-3">
-    <h4 class="mb-1">Daily reports</h4>
-    <p class="text-muted mb-0">Review daily sales and purchase totals for a selected date range.</p>
+    <h2 id="daily-report-heading" class="h4 mb-1">Daily transaction report</h2>
+    <p class="text-muted mb-0">
+      Compare sales, purchases, and sales returns across a selected date range.
+    </p>
   </div>
 
   <div class="card-body border-bottom">
@@ -45,98 +47,157 @@
     <mat-progress-bar mode="indeterminate" />
   }
 
-  @if (reportGenerated() && !loading()) {
+  @if (report(); as data) {
     <div class="card-body">
-      <section class="mb-5" aria-labelledby="sales-report-heading">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h5 id="sales-report-heading" class="mb-1">Daily sales</h5>
-            <small class="text-muted">{{ startDate.value }} to {{ endDate.value }}</small>
-          </div>
-          <span class="badge text-bg-primary">{{ totalTransactions(salesDaily()) }} sales</span>
+      <div class="report-period mb-4">
+        <div>
+          <span class="text-muted d-block">Report period</span>
+          <strong>{{ formatDay(data.fromDate) }} – {{ formatDay(data.toDate) }}</strong>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge text-bg-light border">Timezone: {{ data.timeZone }}</span>
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            [disabled]="downloading()"
+            (click)="downloadReport(data.fromDate, data.toDate)"
+          >
+            <i
+              class="bi"
+              [class.bi-download]="!downloading()"
+              [class.bi-hourglass-split]="downloading()"
+              aria-hidden="true"
+            ></i>
+            {{ downloading() ? 'Downloading...' : 'Download PDF' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4" aria-label="Period totals">
+        <div class="col-md-4">
+          <article class="card h-100 border-0 report-total sales-total">
+            <div class="card-body">
+              <p class="text-muted mb-1">Sales total</p>
+              <p class="report-total-value mb-2">
+                {{ data.sales.totalAmount | number: '1.2-2' }}
+              </p>
+              <p class="mb-0">
+                {{ data.sales.salesCount | number }} sales ·
+                {{ data.sales.itemCount | number }} items ·
+                {{ data.sales.unitsSold | number }} units
+              </p>
+            </div>
+          </article>
+        </div>
+        <div class="col-md-4">
+          <article class="card h-100 border-0 report-total purchases-total">
+            <div class="card-body">
+              <p class="text-muted mb-1">Purchases total</p>
+              <p class="report-total-value mb-2">
+                {{ data.purchases.totalAmount | number: '1.2-2' }}
+              </p>
+              <p class="mb-0">
+                {{ data.purchases.purchaseCount | number }} purchases ·
+                {{ data.purchases.itemCount | number }} items ·
+                {{ data.purchases.unitsPurchased | number }} units
+              </p>
+            </div>
+          </article>
+        </div>
+        <div class="col-md-4">
+          <article class="card h-100 border-0 report-total returns-total">
+            <div class="card-body">
+              <p class="text-muted mb-1">Total refunded</p>
+              <p class="report-total-value mb-2">
+                {{ data.salesReturns.totalRefundedAmount | number: '1.2-2' }}
+              </p>
+              <p class="mb-0">
+                {{ data.salesReturns.salesReturnCount | number }} returns ·
+                {{ data.salesReturns.itemCount | number }} items ·
+                {{ data.salesReturns.unitsReturned | number }} units
+              </p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <section aria-labelledby="daily-activity-heading">
+        <div class="mb-3">
+          <h3 id="daily-activity-heading" class="h5 mb-1">Daily activity</h3>
+          <p class="text-muted small mb-0">
+            Daily transaction counts, item and unit quantities, and amounts.
+          </p>
         </div>
 
         <div class="table-responsive">
-          <table class="table table-bordered align-middle">
+          <table class="table table-bordered table-hover align-middle daily-report-table">
             <thead>
-              <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Sales</th>
-                <th scope="col">Items sold</th>
-                <th scope="col">Sales total</th>
+              <tr class="table-light">
+                <th scope="col" rowspan="2">Date</th>
+                <th scope="colgroup" colspan="4">Purchases</th>
+                <th scope="colgroup" colspan="4">Sales</th>
+                <th scope="colgroup" colspan="4">Sales returns</th>
+              </tr>
+              <tr class="table-light">
+                <th scope="col">Count</th>
+                <th scope="col">Items</th>
+                <th scope="col">Units</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Count</th>
+                <th scope="col">Items</th>
+                <th scope="col">Units</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Count</th>
+                <th scope="col">Items</th>
+                <th scope="col">Units</th>
+                <th scope="col">Refunded</th>
               </tr>
             </thead>
             <tbody>
-              @for (row of salesDaily(); track row.date) {
+              @for (entry of data.datewiseEntries; track entry.date) {
                 <tr>
-                  <td>{{ formatDay(row.date) }}</td>
-                  <td>{{ row.transactions }}</td>
-                  <td>{{ row.items }}</td>
-                  <td class="fw-semibold">{{ row.amount | number: '1.2-2' }}</td>
+                  <th scope="row" class="text-nowrap">{{ formatDay(entry.date) }}</th>
+                  <td class="text-end">{{ entry.purchases.purchaseCount | number }}</td>
+                  <td class="text-end">{{ entry.purchases.itemCount | number }}</td>
+                  <td class="text-end">{{ entry.purchases.unitsPurchased | number }}</td>
+                  <td class="text-end">{{ entry.purchases.totalAmount | number: '1.2-2' }}</td>
+                  <td class="text-end">{{ entry.sales.salesCount | number }}</td>
+                  <td class="text-end">{{ entry.sales.itemCount | number }}</td>
+                  <td class="text-end">{{ entry.sales.unitsSold | number }}</td>
+                  <td class="text-end">{{ entry.sales.totalAmount | number: '1.2-2' }}</td>
+                  <td class="text-end">{{ entry.salesReturns.salesReturnCount | number }}</td>
+                  <td class="text-end">{{ entry.salesReturns.itemCount | number }}</td>
+                  <td class="text-end">{{ entry.salesReturns.unitsReturned | number }}</td>
+                  <td class="text-end">
+                    {{ entry.salesReturns.totalRefundedAmount | number: '1.2-2' }}
+                  </td>
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="4" class="text-center text-muted p-3">
-                    No sales found for this date range.
+                  <td colspan="13" class="text-center text-muted p-4">
+                    No daily activity found for this date range.
                   </td>
                 </tr>
               }
             </tbody>
-            <tfoot>
+            <tfoot class="table-light">
               <tr>
-                <th>Total</th>
-                <th>{{ totalTransactions(salesDaily()) }}</th>
-                <th>{{ totalItems(salesDaily()) }}</th>
-                <th>{{ totalAmount(salesDaily()) }}</th>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </section>
-
-      <section aria-labelledby="purchases-report-heading">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h5 id="purchases-report-heading" class="mb-1">Daily purchases</h5>
-            <small class="text-muted">{{ startDate.value }} to {{ endDate.value }}</small>
-          </div>
-          <span class="badge text-bg-secondary">
-            {{ totalTransactions(purchasesDaily()) }} purchases
-          </span>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-bordered align-middle">
-            <thead>
-              <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Purchases</th>
-                <th scope="col">Items received</th>
-                <th scope="col">Purchase total</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of purchasesDaily(); track row.date) {
-                <tr>
-                  <td>{{ formatDay(row.date) }}</td>
-                  <td>{{ row.transactions }}</td>
-                  <td>{{ row.items }}</td>
-                  <td class="fw-semibold">{{ row.amount | number: '1.2-2' }}</td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="4" class="text-center text-muted p-3">
-                    No purchases found for this date range.
-                  </td>
-                </tr>
-              }
-            </tbody>
-            <tfoot>
-              <tr>
-                <th>Total</th>
-                <th>{{ totalTransactions(purchasesDaily()) }}</th>
-                <th>{{ totalItems(purchasesDaily()) }}</th>
-                <th>{{ totalAmount(purchasesDaily()) }}</th>
+                <th scope="row">Range total</th>
+                <th class="text-end">{{ data.purchases.purchaseCount | number }}</th>
+                <th class="text-end">{{ data.purchases.itemCount | number }}</th>
+                <th class="text-end">{{ data.purchases.unitsPurchased | number }}</th>
+                <th class="text-end">{{ data.purchases.totalAmount | number: '1.2-2' }}</th>
+                <th class="text-end">{{ data.sales.salesCount | number }}</th>
+                <th class="text-end">{{ data.sales.itemCount | number }}</th>
+                <th class="text-end">{{ data.sales.unitsSold | number }}</th>
+                <th class="text-end">{{ data.sales.totalAmount | number: '1.2-2' }}</th>
+                <th class="text-end">{{ data.salesReturns.salesReturnCount | number }}</th>
+                <th class="text-end">{{ data.salesReturns.itemCount | number }}</th>
+                <th class="text-end">{{ data.salesReturns.unitsReturned | number }}</th>
+                <th class="text-end">
+                  {{ data.salesReturns.totalRefundedAmount | number: '1.2-2' }}
+                </th>
               </tr>
             </tfoot>
           </table>
@@ -144,4 +205,4 @@
       </section>
     </div>
   }
-</div>
+</section>

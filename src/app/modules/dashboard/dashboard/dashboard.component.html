@@ -6,16 +6,6 @@
       <p class="text-muted mb-0">Business summary for {{ requestedDate() }}.</p>
     </div>
     <div class="dashboard-header-actions">
-      <label class="report-date">
-        <span class="form-label mb-1">Report date</span>
-        <input
-          type="date"
-          class="form-control"
-          [value]="requestedDate()"
-          [disabled]="loading()"
-          (change)="onDateChange($event)"
-        />
-      </label>
       <div class="clock-card" aria-label="Current local date and time">
         <span class="clock-date">{{ now() | date: 'EEEE, MMMM d, y' }}</span>
         <span class="clock-time">{{ now() | date: 'h:mm:ss a' }}</span>

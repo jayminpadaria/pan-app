@@ -1,0 +1,199 @@
+<section class="daily-stock-report" aria-labelledby="daily-stock-heading">
+  <header class="stock-report-header">
+    <div>
+      <p class="stock-report-eyebrow">INVENTORY</p>
+      <h1 id="daily-stock-heading">Daily stock report</h1>
+      <p class="text-muted mb-0">Stock quantities and inventory value by product variant.</p>
+    </div>
+    <div class="stock-report-date">
+      <label for="stockReportDate" class="form-label">Report date</label>
+      <div class="stock-report-controls">
+        <input
+          id="stockReportDate"
+          type="date"
+          class="form-control"
+          [formControl]="reportDate"
+          [disabled]="loading()"
+          (change)="onReportDateChange()"
+        />
+        <button
+          mat-flat-button
+          color="primary"
+          class="stock-report-action"
+          type="button"
+          [disabled]="loading()"
+          (click)="generateReport()"
+        >
+          {{ loading() ? 'Loading...' : 'Generate' }}
+        </button>
+        <button
+          mat-stroked-button
+          class="stock-report-action"
+          type="button"
+          [disabled]="!loadedDate() || loading() || downloading()"
+          (click)="downloadReport()"
+          aria-label="Download daily stock report as PDF"
+        >
+          <i
+            class="bi me-1"
+            [class.bi-download]="!downloading()"
+            [class.bi-hourglass-split]="downloading()"
+            aria-hidden="true"
+          ></i>
+          {{ downloading() ? 'Downloading...' : 'Download PDF' }}
+        </button>
+      </div>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (stock(); as report) {
+    <section class="stock-summary-grid" aria-label="Stock summary">
+      <article class="stock-summary-card available-card">
+        <div class="stock-summary-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></div>
+        <div>
+          <p class="stock-summary-label">Available stock</p>
+          <p class="stock-summary-value">{{ report.totals.availableQty | number }}</p>
+          <p class="stock-summary-detail">
+            {{ report.totals.productCount | number }} products ·
+            {{ report.totals.stockBatchCount | number }} batches
+          </p>
+        </div>
+      </article>
+      <article class="stock-summary-card in-stock-card">
+        <div class="stock-summary-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></div>
+        <div>
+          <p class="stock-summary-label">In stock (&gt; 11)</p>
+          <p class="stock-summary-value">{{ stockVariantCounts()['in-stock'] | number }}</p>
+          <p class="stock-summary-detail">variants</p>
+        </div>
+      </article>
+      <article class="stock-summary-card low-stock-card">
+        <div class="stock-summary-icon">
+          <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        </div>
+        <div>
+          <p class="stock-summary-label">Low stock (1-11)</p>
+          <p class="stock-summary-value">{{ stockVariantCounts()['low-stock'] | number }}</p>
+          <p class="stock-summary-detail">variants</p>
+        </div>
+      </article>
+      <article class="stock-summary-card out-stock-card">
+        <div class="stock-summary-icon"><i class="bi bi-x-circle" aria-hidden="true"></i></div>
+        <div>
+          <p class="stock-summary-label">Out of stock (0)</p>
+          <p class="stock-summary-value">{{ stockVariantCounts()['out-of-stock'] | number }}</p>
+          <p class="stock-summary-detail">variants</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="stock-content-card" aria-labelledby="stock-by-product-heading">
+      <div class="stock-section-heading">
+        <div>
+          <h2 id="stock-by-product-heading">Stock by product</h2>
+          <p>
+            Inventory cost value {{ report.totals.inventoryCostValue | number: '1.2-2' }} · Damaged
+            {{ report.totals.damagedQty | number }} · Expired
+            {{ report.totals.expiredQty | number }} · Obsolete
+            {{ report.totals.obsoleteQty | number }}
+          </p>
+        </div>
+        <span class="stock-count-badge">
+          {{ filteredStockGroups().length }} of {{ report.groups.length }} variants
+        </span>
+      </div>
+
+      <div class="stock-controls">
+        <label>
+          <span class="form-label mb-1">Search stock</span>
+          <input
+            type="search"
+            class="form-control"
+            placeholder="Product, variant, SKU, status..."
+            [value]="search()"
+            (input)="onSearch($event)"
+          />
+        </label>
+        <label>
+          <span class="form-label mb-1">Sort by</span>
+          <select class="form-select" [value]="sortBy()" (change)="onSortChange($event)">
+            <option value="status">Stock status</option>
+            <option value="productName">Product</option>
+            <option value="variantName">Variant</option>
+            <option value="availableQty">Available quantity</option>
+            <option value="inventoryCostValue">Inventory value</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="toggleSortDirection()"
+          [attr.aria-label]="sortDirection() === 'asc' ? 'Sort descending' : 'Sort ascending'"
+        >
+          <i
+            class="bi"
+            [class.bi-sort-up]="sortDirection() === 'asc'"
+            [class.bi-sort-down]="sortDirection() === 'desc'"
+            aria-hidden="true"
+          ></i>
+          {{ sortDirection() === 'asc' ? 'Ascending' : 'Descending' }}
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table stock-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Variant</th>
+              <th>SKU</th>
+              <th class="text-end">Available</th>
+              <th>Stock status</th>
+              <th class="text-end">Damaged</th>
+              <th class="text-end">Expired</th>
+              <th class="text-end">Obsolete</th>
+              <th class="text-end">Batches</th>
+              <th class="text-end">Inventory value</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of filteredStockGroups(); track row.variantId) {
+              <tr>
+                <td class="fw-semibold">{{ row.productName }}</td>
+                <td>{{ row.variantName }}</td>
+                <td class="text-muted">{{ row.sku }}</td>
+                <td class="text-end">
+                  <span class="quantity-pill" [class.quantity-low]="row.availableQty <= 11">
+                    {{ row.availableQty | number }}
+                  </span>
+                </td>
+                <td>
+                  <span class="stock-status" [class]="stockLevelClass(row.availableQty)">
+                    {{ stockLevelLabel(row.availableQty) }}
+                  </span>
+                </td>
+                <td class="text-end">{{ row.damagedQty | number }}</td>
+                <td class="text-end">{{ row.expiredQty | number }}</td>
+                <td class="text-end">{{ row.obsoleteQty | number }}</td>
+                <td class="text-end">{{ row.stockBatchCount | number }}</td>
+                <td class="text-end fw-semibold">
+                  {{ row.inventoryCostValue | number: '1.2-2' }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="empty-state">
+                  {{ search() ? 'No stock records match your search.' : 'No stock records found.' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</section>

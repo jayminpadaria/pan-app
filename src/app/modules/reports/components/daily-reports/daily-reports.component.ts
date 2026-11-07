@@ -3,20 +3,9 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { forkJoin } from 'rxjs';
-import { ListRequest } from '../../../../shared/interfaces/list.interface';
-import { Purchase } from '../../../../shared/interfaces/purchase.interface';
-import { Sales } from '../../../../shared/interfaces/sales.interface';
+import { DailyReport } from '../../../../shared/interfaces/daily-report.interface';
 import { NotificationService } from '../../../../shared/services/notification.service';
-import { PurchasesService } from '../../../../shared/services/purchases.service';
-import { SalesService } from '../../../../shared/services/sales.service';
-
-interface DailySummary {
-  date: string;
-  transactions: number;
-  items: number;
-  amount: number;
-}
+import { DashboardReportService } from '../../../../shared/services/dashboard-report.service';
 
 const localToday = () => {
   const date = new Date();
@@ -32,65 +21,55 @@ const localToday = () => {
   styleUrl: './daily-reports.component.scss',
 })
 export class DailyReportsComponent implements OnInit {
-  private readonly salesService = inject(SalesService);
-  private readonly purchasesService = inject(PurchasesService);
+  private readonly reportService = inject(DashboardReportService);
   private readonly notification = inject(NotificationService);
 
   readonly startDate = new FormControl(localToday(), { nonNullable: true });
   readonly endDate = new FormControl(localToday(), { nonNullable: true });
   readonly loading = signal(false);
-  readonly reportGenerated = signal(false);
-  readonly salesDaily = signal<DailySummary[]>([]);
-  readonly purchasesDaily = signal<DailySummary[]>([]);
-  private readonly currencyFormat = new Intl.NumberFormat(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  readonly downloading = signal(false);
+  readonly report = signal<DailyReport | null>(null);
 
   ngOnInit() {
     this.generateReport();
   }
 
   generateReport() {
-    const start = this.startDate.value;
-    const end = this.endDate.value;
-    if (!start || !end) {
+    const fromDate = this.startDate.value;
+    const toDate = this.endDate.value;
+    if (!fromDate || !toDate) {
       this.notification.error('Select both a start date and an end date.');
       return;
     }
-    if (start > end) {
+    if (fromDate > toDate) {
       this.notification.error('The start date must be on or before the end date.');
+      return;
+    }
+    if (this.loading()) {
       return;
     }
 
     this.loading.set(true);
-    forkJoin({
-      sales: this.salesService.getAll(this.dateRangeRequest('salesDate', start, end)),
-      purchases: this.purchasesService.getAll(
-        this.dateRangeRequest('transactionDate', start, end),
-      ),
-    }).subscribe({
-      next: ({ sales, purchases }) => {
-        const salesRecords = sales.result?.documentItems;
-        const purchaseRecords = purchases.result?.documentItems;
-        if (!salesRecords || !purchaseRecords) {
-          this.notification.error('The report response did not include sales and purchase records.');
-          this.loading.set(false);
-          return;
-        }
-        if (!this.allDatesValid(salesRecords, purchaseRecords)) {
-          this.notification.error('The report contains a record with an invalid date.');
+    this.report.set(null);
+    this.reportService.getDailyReport(fromDate, toDate).subscribe({
+      next: (response) => {
+        const result = response.result;
+        if (
+          !result?.purchases ||
+          !result.sales ||
+          !result.salesReturns ||
+          !Array.isArray(result.datewiseEntries)
+        ) {
+          this.notification.error('The daily report response did not include complete report data.');
           this.loading.set(false);
           return;
         }
 
-        this.salesDaily.set(this.summarizeSales(salesRecords));
-        this.purchasesDaily.set(this.summarizePurchases(purchaseRecords));
-        this.reportGenerated.set(true);
+        this.report.set(result);
         this.loading.set(false);
       },
       error: () => {
-        this.notification.error('Failed to generate daily reports.');
+        this.notification.error('Failed to generate the daily report.');
         this.loading.set(false);
       },
     });
@@ -101,76 +80,35 @@ export class DailyReportsComponent implements OnInit {
     return new Date(year, month - 1, day).toLocaleDateString();
   }
 
-  totalTransactions(rows: DailySummary[]) {
-    return rows.reduce((total, row) => total + row.transactions, 0);
-  }
+  downloadReport(fromDate: string, toDate: string) {
+    if (this.downloading()) {
+      return;
+    }
 
-  totalItems(rows: DailySummary[]) {
-    return rows.reduce((total, row) => total + row.items, 0);
-  }
+    this.downloading.set(true);
+    this.reportService.downloadDailyReport(fromDate, toDate).subscribe({
+      next: (pdf) => {
+        if (!pdf.size) {
+          this.notification.error('The daily report PDF was empty.');
+          this.downloading.set(false);
+          return;
+        }
 
-  totalAmount(rows: DailySummary[]) {
-    return this.currencyFormat.format(rows.reduce((total, row) => total + row.amount, 0));
-  }
-
-  private dateRangeRequest(columnName: string, start: string, end: string): ListRequest {
-    return {
-      filterList: [
-        {
-          columnName,
-          type: 'filterDateRange',
-          value: {
-            startDate: `${start}T00:00:00.000Z`,
-            endDate: `${end}T23:59:59.999Z`,
-          },
-        },
-      ],
-      sortHeader: columnName,
-      sortDirection: 'ASC',
-      page: 1,
-      limit: 1000,
-      isPagination: false,
-    };
-  }
-
-  private allDatesValid(sales: Sales[], purchases: Purchase[]) {
-    return (
-      sales.every((sale) => Number.isFinite(new Date(sale.salesDate).getTime())) &&
-      purchases.every((purchase) =>
-        Number.isFinite(new Date(purchase.transactionDate).getTime()),
-      )
-    );
-  }
-
-  private summarizeSales(sales: Sales[]): DailySummary[] {
-    const summaries = new Map<string, DailySummary>();
-    sales.forEach((sale) => {
-      const date = this.localDateKey(sale.salesDate);
-      const summary = summaries.get(date) ?? { date, transactions: 0, items: 0, amount: 0 };
-      summary.transactions += 1;
-      summary.items += sale.items.reduce((total, item) => total + item.quantity, 0);
-      summary.amount += sale.grandTotal;
-      summaries.set(date, summary);
+        const url = URL.createObjectURL(pdf);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `daily-transaction-report-${fromDate}-to-${toDate}.pdf`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.notification.success('Daily report downloaded successfully.');
+        this.downloading.set(false);
+      },
+      error: () => {
+        this.notification.error('Failed to download the daily report.');
+        this.downloading.set(false);
+      },
     });
-    return [...summaries.values()].sort((left, right) => left.date.localeCompare(right.date));
-  }
-
-  private summarizePurchases(purchases: Purchase[]): DailySummary[] {
-    const summaries = new Map<string, DailySummary>();
-    purchases.forEach((purchase) => {
-      const date = this.localDateKey(purchase.transactionDate);
-      const summary = summaries.get(date) ?? { date, transactions: 0, items: 0, amount: 0 };
-      summary.transactions += 1;
-      summary.items += purchase.items.reduce((total, item) => total + item.quantity, 0);
-      summary.amount += purchase.totalCostAmount;
-      summaries.set(date, summary);
-    });
-    return [...summaries.values()].sort((left, right) => left.date.localeCompare(right.date));
-  }
-
-  private localDateKey(value: Date) {
-    const date = new Date(value);
-    const pad = (part: number) => String(part).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   }
 }

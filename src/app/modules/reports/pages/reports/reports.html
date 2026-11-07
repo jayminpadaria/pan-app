@@ -1,1 +1,32 @@
-<app-daily-reports />
+<nav mat-tab-nav-bar [tabPanel]="reportPanel" aria-label="Report sections">
+  <a
+    mat-tab-link
+    routerLink="daily-transactions"
+    routerLinkActive
+    #transactionsTab="routerLinkActive"
+    [active]="transactionsTab.isActive"
+  >
+    Daily Transactions
+  </a>
+  <a
+    mat-tab-link
+    routerLink="daily-stock"
+    routerLinkActive
+    #stockTab="routerLinkActive"
+    [active]="stockTab.isActive"
+  >
+    Daily Stock
+  </a>
+  <a
+    mat-tab-link
+    routerLink="profit-and-loss"
+    routerLinkActive
+    #profitLossTab="routerLinkActive"
+    [active]="profitLossTab.isActive"
+  >
+    Profit &amp; Loss
+  </a>
+</nav>
+<mat-tab-nav-panel #reportPanel>
+  <router-outlet />
+</mat-tab-nav-panel>

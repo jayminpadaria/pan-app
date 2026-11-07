@@ -1,0 +1,184 @@
+<section class="profit-loss-report" aria-labelledby="profit-loss-heading">
+  <header class="report-header">
+    <div>
+      <p class="report-eyebrow">FINANCIAL SUMMARY</p>
+      <h1 id="profit-loss-heading">Profit &amp; Loss</h1>
+      <p class="text-muted mb-0">Review income, expenses, and net result for a date range.</p>
+    </div>
+    <div class="report-date-range">
+      <div>
+        <label for="profitLossStartDate" class="form-label">From</label>
+        <input
+          id="profitLossStartDate"
+          type="date"
+          class="form-control"
+          [formControl]="startDate"
+          [max]="endDate.value || null"
+          [disabled]="loading()"
+        />
+      </div>
+      <div>
+        <label for="profitLossEndDate" class="form-label">To</label>
+        <input
+          id="profitLossEndDate"
+          type="date"
+          class="form-control"
+          [formControl]="endDate"
+          [min]="startDate.value || null"
+          [disabled]="loading()"
+        />
+      </div>
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        [disabled]="loading()"
+        (click)="generateReport()"
+      >
+        {{ loading() ? 'Generating...' : 'Generate report' }}
+      </button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (report(); as data) {
+    <div class="report-period">
+      <div>
+        <span class="text-muted d-block">Report period</span>
+        <strong>{{ formatDay(data.fromDate) }} – {{ formatDay(data.toDate) }}</strong>
+      </div>
+      <span class="badge text-bg-light border">Timezone: {{ data.timeZone }}</span>
+    </div>
+
+    <section class="financial-summary" aria-label="Profit and loss totals">
+      <article class="financial-card income-card">
+        <div class="financial-icon"><i class="bi bi-arrow-down-left" aria-hidden="true"></i></div>
+        <div>
+          <p class="financial-label">Total income</p>
+          <p class="financial-value">{{ data.summary.totalIncome | number: '1.2-2' }}</p>
+          <p class="financial-detail">
+            {{ data.summary.salesCount | number }} sales · Sales
+            {{ data.summary.salesAmount | number: '1.2-2' }} · Returns
+            {{ data.summary.salesReturns | number: '1.2-2' }}
+          </p>
+        </div>
+      </article>
+
+      <article class="financial-card expense-card">
+        <div class="financial-icon"><i class="bi bi-arrow-up-right" aria-hidden="true"></i></div>
+        <div>
+          <p class="financial-label">Total expenses</p>
+          <p class="financial-value">{{ data.summary.totalExpenses | number: '1.2-2' }}</p>
+          <p class="financial-detail">
+            Cost of goods {{ data.summary.costOfGoodsSold | number: '1.2-2' }} ·
+            Returned goods {{ data.summary.returnedGoodsCost | number: '1.2-2' }}
+          </p>
+        </div>
+      </article>
+
+      <article
+        class="financial-card result-card"
+        [class.profit-card]="data.summary.financialResult === 'PROFIT'"
+        [class.loss-card]="data.summary.financialResult === 'LOSS'"
+      >
+        <div class="financial-icon">
+          <i
+            class="bi"
+            [class.bi-graph-up-arrow]="data.summary.financialResult === 'PROFIT'"
+            [class.bi-graph-down-arrow]="data.summary.financialResult === 'LOSS'"
+            aria-hidden="true"
+          ></i>
+        </div>
+        <div>
+          <p class="financial-label">Net profit / loss</p>
+          <p class="financial-value">{{ data.summary.netProfitLoss | number: '1.2-2' }}</p>
+          <span class="result-badge">{{ data.summary.financialResult }}</span>
+          <span class="ms-2 text-muted">
+            {{ data.summary.salesReturnCount | number }} sales returns
+          </span>
+        </div>
+      </article>
+    </section>
+
+    <section class="content-card" aria-labelledby="profit-loss-daily-heading">
+      <div class="section-heading">
+        <div>
+          <h2 id="profit-loss-daily-heading">Daily breakdown</h2>
+          <p>Income, cost of goods, returned goods, and net result by date.</p>
+        </div>
+        <span class="count-badge">{{ data.datewiseEntries.length }} active days</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table profit-loss-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col" class="text-end">Sales</th>
+              <th scope="col" class="text-end">Returns</th>
+              <th scope="col" class="text-end">Total income</th>
+              <th scope="col" class="text-end">Cost of goods</th>
+              <th scope="col" class="text-end">Returned goods cost</th>
+              <th scope="col" class="text-end">Total expenses</th>
+              <th scope="col" class="text-end">Net profit / loss</th>
+              <th scope="col">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of data.datewiseEntries; track entry.date) {
+              <tr>
+                <th scope="row" class="text-nowrap">{{ formatDay(entry.date) }}</th>
+                <td class="text-end">{{ entry.salesAmount | number: '1.2-2' }}</td>
+                <td class="text-end">{{ entry.salesReturns | number: '1.2-2' }}</td>
+                <td class="text-end">{{ entry.totalIncome | number: '1.2-2' }}</td>
+                <td class="text-end">{{ entry.costOfGoodsSold | number: '1.2-2' }}</td>
+                <td class="text-end">{{ entry.returnedGoodsCost | number: '1.2-2' }}</td>
+                <td class="text-end">{{ entry.totalExpenses | number: '1.2-2' }}</td>
+                <td class="text-end fw-semibold">
+                  {{ entry.netProfitLoss | number: '1.2-2' }}
+                </td>
+                <td>
+                  <span
+                    class="result-badge"
+                    [class.profit-badge]="entry.financialResult === 'PROFIT'"
+                    [class.loss-badge]="entry.financialResult === 'LOSS'"
+                  >
+                    {{ entry.financialResult }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-state">No financial activity found for this period.</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot class="table-light">
+            <tr>
+              <th scope="row">Period total</th>
+              <th class="text-end">{{ data.summary.salesAmount | number: '1.2-2' }}</th>
+              <th class="text-end">{{ data.summary.salesReturns | number: '1.2-2' }}</th>
+              <th class="text-end">{{ data.summary.totalIncome | number: '1.2-2' }}</th>
+              <th class="text-end">{{ data.summary.costOfGoodsSold | number: '1.2-2' }}</th>
+              <th class="text-end">{{ data.summary.returnedGoodsCost | number: '1.2-2' }}</th>
+              <th class="text-end">{{ data.summary.totalExpenses | number: '1.2-2' }}</th>
+              <th class="text-end">{{ data.summary.netProfitLoss | number: '1.2-2' }}</th>
+              <th>
+                <span
+                  class="result-badge"
+                  [class.profit-badge]="data.summary.financialResult === 'PROFIT'"
+                  [class.loss-badge]="data.summary.financialResult === 'LOSS'"
+                >
+                  {{ data.summary.financialResult }}
+                </span>
+              </th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  }
+</section>
