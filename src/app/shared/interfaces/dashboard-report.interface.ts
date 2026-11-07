@@ -12,6 +12,10 @@ export interface DashboardReport {
     unitsSold: number;
     costOfGoodsSold: number;
   };
+  salesReturns: {
+    salesReturnCount: number;
+    totalRefundedAmount: number;
+  };
   stock: {
     groups: DashboardStockGroup[];
     totals: {

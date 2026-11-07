@@ -3,27 +3,55 @@
     <div>
       <p class="eyebrow mb-2">OVERVIEW</p>
       <h1 class="mb-1">Good day</h1>
-      <p class="text-muted mb-0">Business summary for {{ now() | date: 'EEEE, MMMM d, y' }}.</p>
+      <p class="text-muted mb-0">Business summary for {{ requestedDate() }}.</p>
     </div>
-    <div class="clock-card" aria-label="Current local date and time">
-      <span class="clock-date">{{ now() | date: 'EEEE, MMMM d, y' }}</span>
-      <span class="clock-time">{{ now() | date: 'h:mm:ss a' }}</span>
+    <div class="dashboard-header-actions">
+      <label class="report-date">
+        <span class="form-label mb-1">Report date</span>
+        <input
+          type="date"
+          class="form-control"
+          [value]="requestedDate()"
+          [disabled]="loading()"
+          (change)="onDateChange($event)"
+        />
+      </label>
+      <div class="clock-card" aria-label="Current local date and time">
+        <span class="clock-date">{{ now() | date: 'EEEE, MMMM d, y' }}</span>
+        <span class="clock-time">{{ now() | date: 'h:mm:ss a' }}</span>
+      </div>
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        [disabled]="loading()"
+        (click)="loadDashboard()"
+        aria-label="Refresh dashboard data"
+        [attr.title]="loading() ? 'Refreshing...' : 'Refresh dashboard data'"
+      >
+        <i
+          class="bi"
+          [class.bi-arrow-clockwise]="!loading()"
+          [class.bi-hourglass-split]="loading()"
+          aria-hidden="true"
+        ></i>
+        {{ loading() ? 'Refreshing...' : 'Refresh' }}
+      </button>
+      <button
+        class="btn btn-outline-primary"
+        type="button"
+        [disabled]="downloadingReports()"
+        (click)="downloadReports()"
+        aria-label="Download all reports"
+        [attr.title]="downloadingReports() ? 'Downloading...' : 'Download all reports'"
+      >
+        <i
+          class="bi"
+          [class.bi-download]="!downloadingReports()"
+          [class.bi-hourglass-split]="downloadingReports()"
+          aria-hidden="true"
+        ></i>
+      </button>
     </div>
-    <!-- <button
-      mat-icon-button
-      type="button"
-      [disabled]="downloadingReports()"
-      (click)="downloadReports()"
-      aria-label="Download all reports"
-      [attr.title]="downloadingReports() ? 'Downloading...' : 'Download all reports'"
-    >
-      <i
-        class="bi"
-        [class.bi-download]="!downloadingReports()"
-        [class.bi-hourglass-split]="downloadingReports()"
-        aria-hidden="true"
-      ></i>
-    </button> -->
   </header>
 
   @if (loading()) {
@@ -35,7 +63,7 @@
       <article class="summary-card sales-card">
         <div class="summary-icon"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></div>
         <div class="summary-content">
-          <p class="summary-label">Today's sales</p>
+          <p class="summary-label">Sales for selected date</p>
           <p class="summary-value">{{ data.sales.totalAmount | number: '1.2-2' }}</p>
           <p class="summary-detail">
             {{ data.sales.salesCount }} sales · {{ data.sales.unitsSold | number }} units sold
@@ -58,11 +86,26 @@
       <article class="summary-card purchase-card">
         <div class="summary-icon"><i class="bi bi-bag-check" aria-hidden="true"></i></div>
         <div class="summary-content">
-          <p class="summary-label">Today's purchases</p>
+          <p class="summary-label">Purchases for selected date</p>
           <p class="summary-value">{{ data.purchases.totalAmount | number: '1.2-2' }}</p>
           <p class="summary-detail">
             {{ data.purchases.purchaseCount }} purchases ·
             {{ data.purchases.unitsPurchased | number }} units purchased
+          </p>
+        </div>
+      </article>
+
+      <article class="summary-card returns-card">
+        <div class="summary-icon">
+          <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+        </div>
+        <div class="summary-content">
+          <p class="summary-label">Sales returns for selected date</p>
+          <p class="summary-value">
+            {{ data.salesReturns.totalRefundedAmount | number: '1.2-2' }}
+          </p>
+          <p class="summary-detail">
+            {{ data.salesReturns.salesReturnCount | number }} returns · total refunded
           </p>
         </div>
       </article>
@@ -80,6 +123,18 @@
             <span
               >Inventory cost value
               <strong>{{ data.stock.totals.inventoryCostValue | number: '1.2-2' }}</strong>
+            </span>
+            <span>
+              In stock (&gt; 11)
+              <strong>{{ stockVariantCounts()['in-stock'] | number }} variants</strong>
+            </span>
+            <span>
+              Low stock (1-11)
+              <strong>{{ stockVariantCounts()['low-stock'] | number }} variants</strong>
+            </span>
+            <span>
+              Out of stock (0)
+              <strong>{{ stockVariantCounts()['out-of-stock'] | number }} variants</strong>
             </span>
             <span
               >Damaged <strong>{{ data.stock.totals.damagedQty | number }}</strong></span
@@ -101,7 +156,51 @@
           <h2>Stock by product</h2>
           <p>Current inventory quantities and value by product variant</p>
         </div>
-        <span class="count-badge">{{ data.stock.groups.length }} variants</span>
+        <span class="count-badge">
+          {{ filteredStockGroups().length }} of {{ data.stock.groups.length }} variants
+        </span>
+      </div>
+      <div class="stock-controls">
+        <label>
+          <span class="form-label mb-1">Search stock</span>
+          <input
+            type="search"
+            class="form-control"
+            placeholder="Product, variant, SKU, status..."
+            [value]="stockSearch()"
+            (input)="onStockSearch($event)"
+          />
+        </label>
+        <label>
+          <span class="form-label mb-1">Sort by</span>
+          <select
+            class="form-select"
+            [value]="stockSortBy()"
+            (change)="onStockSortChange($event)"
+          >
+            <option value="status">Stock status</option>
+            <option value="productName">Product</option>
+            <option value="variantName">Variant</option>
+            <option value="availableQty">Available quantity</option>
+            <option value="inventoryCostValue">Inventory value</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="toggleStockSortDirection()"
+          [attr.aria-label]="
+            stockSortDirection() === 'asc' ? 'Sort descending' : 'Sort ascending'
+          "
+        >
+          <i
+            class="bi"
+            [class.bi-sort-up]="stockSortDirection() === 'asc'"
+            [class.bi-sort-down]="stockSortDirection() === 'desc'"
+            aria-hidden="true"
+          ></i>
+          {{ stockSortDirection() === 'asc' ? 'Ascending' : 'Descending' }}
+        </button>
       </div>
       <div class="table-responsive">
         <table class="table stock-table align-middle mb-0">
@@ -111,6 +210,7 @@
               <th>Variant</th>
               <th>SKU</th>
               <th class="text-end">Available</th>
+              <th>Stock status</th>
               <th class="text-end">Damaged</th>
               <th class="text-end">Expired</th>
               <th class="text-end">Obsolete</th>
@@ -119,7 +219,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (row of data.stock.groups; track row.variantId) {
+            @for (row of filteredStockGroups(); track row.variantId) {
               <tr>
                 <td class="fw-semibold">{{ row.productName }}</td>
                 <td>{{ row.variantName }}</td>
@@ -127,6 +227,11 @@
                 <td class="text-end">
                   <span class="quantity-pill" [class.quantity-low]="row.availableQty <= 5">
                     {{ row.availableQty | number }}
+                  </span>
+                </td>
+                <td>
+                  <span class="stock-status" [class]="stockLevelClass(row.availableQty)">
+                    {{ stockLevelLabel(row.availableQty) }}
                   </span>
                 </td>
                 <td class="text-end">{{ row.damagedQty | number }}</td>
@@ -139,7 +244,9 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="9" class="empty-state">No stock records found.</td>
+                <td colspan="10" class="empty-state">
+                  {{ stockSearch() ? 'No stock records match your search.' : 'No stock records found.' }}
+                </td>
               </tr>
             }
           </tbody>
