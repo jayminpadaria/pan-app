@@ -50,7 +50,23 @@
         <span class="text-muted d-block">Report period</span>
         <strong>{{ formatDay(data.fromDate) }} – {{ formatDay(data.toDate) }}</strong>
       </div>
-      <span class="badge text-bg-light border">Timezone: {{ data.timeZone }}</span>
+      <div class="report-period-actions">
+        <span class="badge text-bg-light border">Timezone: {{ data.timeZone }}</span>
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="downloading()"
+          (click)="downloadReport(data.fromDate, data.toDate)"
+        >
+          <i
+            class="bi me-1"
+            [class.bi-download]="!downloading()"
+            [class.bi-hourglass-split]="downloading()"
+            aria-hidden="true"
+          ></i>
+          {{ downloading() ? 'Downloading...' : 'Download PDF' }}
+        </button>
+      </div>
     </div>
 
     <section class="financial-summary" aria-label="Profit and loss totals">

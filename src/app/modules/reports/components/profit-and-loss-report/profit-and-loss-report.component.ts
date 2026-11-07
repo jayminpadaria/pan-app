@@ -32,6 +32,7 @@ export class ProfitAndLossReportComponent implements OnInit {
   readonly startDate = new FormControl(localMonthStart(), { nonNullable: true });
   readonly endDate = new FormControl(localDateKey(new Date()), { nonNullable: true });
   readonly loading = signal(false);
+  readonly downloading = signal(false);
   readonly report = signal<ProfitAndLossReport | null>(null);
 
   ngOnInit() {
@@ -79,5 +80,37 @@ export class ProfitAndLossReportComponent implements OnInit {
   formatDay(date: string) {
     const [year, month, day] = date.split('-').map(Number);
     return new Date(year, month - 1, day).toLocaleDateString();
+  }
+
+  downloadReport(fromDate: string, toDate: string) {
+    if (this.downloading()) {
+      return;
+    }
+
+    this.downloading.set(true);
+    this.reportService.downloadProfitAndLoss(fromDate, toDate).subscribe({
+      next: (pdf) => {
+        if (!pdf.size) {
+          this.notification.error('The profit and loss PDF was empty.');
+          this.downloading.set(false);
+          return;
+        }
+
+        const url = URL.createObjectURL(pdf);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `profit-and-loss-${fromDate}-to-${toDate}.pdf`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.notification.success('Profit and loss report downloaded successfully.');
+        this.downloading.set(false);
+      },
+      error: () => {
+        this.notification.error('Failed to download the profit and loss report.');
+        this.downloading.set(false);
+      },
+    });
   }
 }

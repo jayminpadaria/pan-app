@@ -44,4 +44,12 @@ export class DashboardReportService {
       { fromDate, toDate },
     );
   }
+
+  downloadProfitAndLoss(fromDate: string, toDate: string) {
+    return this.http.post(
+      `${API_URL}/profit-loss/date-range/pdf`,
+      { fromDate, toDate },
+      { responseType: 'blob' },
+    );
+  }
 }
