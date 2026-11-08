@@ -61,7 +61,7 @@ export const allMenu: readonly AppMenuItem[] = [
     link: '/app/reports',
     icon: 'bi-graph-up',
     isEnabled: true,
-    roles: ['admin', 'manager'],
+    roles: ['admin', 'manager', 'user'],
   },
   {
     label: 'Categories',

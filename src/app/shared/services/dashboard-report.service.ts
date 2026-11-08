@@ -5,6 +5,7 @@ import { ApiResponseFormat } from '../interfaces/api-response.interface';
 import { DailyReport } from '../interfaces/daily-report.interface';
 import { DashboardReport } from '../interfaces/dashboard-report.interface';
 import { ProfitAndLossReport } from '../interfaces/profit-and-loss.interface';
+import { REPORT_NAME } from '../interfaces/report-name.enum';
 
 const API_URL = `${environment.apiUrl}/reports`;
 
@@ -51,5 +52,13 @@ export class DashboardReportService {
       { fromDate, toDate },
       { responseType: 'blob' },
     );
+  }
+
+  emailReport(reportName: REPORT_NAME, fromDate: string, toDate: string) {
+    return this.http.post<ApiResponseFormat>(`${API_URL}/email`, {
+      reportName,
+      fromDate,
+      toDate,
+    });
   }
 }

@@ -1,0 +1,59 @@
+<section aria-labelledby="email-report-heading">
+  <header class="py-4">
+    <h1 id="email-report-heading">Email Report</h1>
+    <p class="text-muted mb-0">Choose a report and date range to send it by email.</p>
+  </header>
+
+  <div class="row g-3 align-items-end">
+    <div class="col-12 col-md-3">
+      <mat-form-field appearance="outline" class="w-100">
+        <mat-label>Report</mat-label>
+        <mat-select [formControl]="reportName" [disabled]="sending()">
+          <mat-option *ngFor="let option of reportOptions" [value]="option.value">
+            {{ option.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <mat-form-field appearance="outline" class="w-100">
+        <mat-label>From</mat-label>
+        <input
+          matInput
+          id="emailReportStartDate"
+          type="date"
+          [formControl]="startDate"
+          [max]="endDate.value || null"
+          [disabled]="sending()"
+        />
+      </mat-form-field>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <mat-form-field appearance="outline" class="w-100">
+        <mat-label>To</mat-label>
+        <input
+          matInput
+          id="emailReportEndDate"
+          type="date"
+          [formControl]="endDate"
+          [min]="startDate.value || null"
+          [disabled]="sending()"
+        />
+      </mat-form-field>
+    </div>
+
+    <div class="col-12 col-md-12">
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        [disabled]="sending()"
+        (click)="emailReport()"
+      >
+        {{ sending() ? 'Sending...' : 'Email report' }}
+      </button>
+    </div>
+  </div>
+</section>
