@@ -97,6 +97,7 @@
                   <th scope="col">Payment method</th>
                   <th scope="col">Items</th>
                   <th scope="col" class="text-end">Refunded</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,10 +110,32 @@
                     <td class="text-end">
                       {{ salesReturn.totalRefundedToCustomer | number: '1.2-2' }}
                     </td>
+                    <td class="text-nowrap">
+                      <button
+                        mat-icon-button
+                        color="warn"
+                        type="button"
+                        [disabled]="loadingReturns() || saving() || deletingReturnId() !== null"
+                        (click)="deleteSalesReturn(salesReturn)"
+                        [attr.aria-label]="'Delete sales return ' + salesReturn.salesReturnNumber"
+                        [attr.title]="
+                          deletingReturnId() === salesReturn._id
+                            ? 'Deleting sales return...'
+                            : 'Delete sales return'
+                        "
+                      >
+                        <i
+                          class="bi"
+                          [class.bi-trash]="deletingReturnId() !== salesReturn._id"
+                          [class.bi-hourglass-split]="deletingReturnId() === salesReturn._id"
+                          aria-hidden="true"
+                        ></i>
+                      </button>
+                    </td>
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="5" class="text-center text-muted">No returns for this invoice.</td>
+                    <td colspan="6" class="text-center text-muted">No returns for this invoice.</td>
                   </tr>
                 }
               </tbody>
@@ -185,7 +208,7 @@
               </thead>
               <tbody>
                 @for (
-                  row of rows();
+                  row of returnableRows();
                   track row.saleItem.productStockId + row.saleItem.productVariantId + $index
                 ) {
                   <tr [formGroup]="row.form">

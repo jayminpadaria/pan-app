@@ -74,6 +74,7 @@ export class SalesReturnsComponent implements OnInit {
   readonly loadingReturns = signal(false);
   readonly returnsLoadError = signal(false);
   readonly saving = signal(false);
+  readonly deletingReturnId = signal<string | null>(null);
   private saleId: string | null = null;
 
   readonly form: FormGroup<ReturnFormControls> = this.formBuilder.group({
@@ -131,6 +132,10 @@ export class SalesReturnsComponent implements OnInit {
     return this.rows().some((row) => row.remainingQuantity > 0);
   }
 
+  returnableRows(): ReturnRow[] {
+    return this.rows().filter((row) => row.remainingQuantity > 0);
+  }
+
   returnStatus(): SALES_RETURN_STATUS {
     const status = this.sale()?.salesReturnStatus;
     if (status === 'FULL') return SALES_RETURN_STATUS.FULLY_RETURNED;
@@ -146,9 +151,35 @@ export class SalesReturnsComponent implements OnInit {
     if (sale) this.loadReturns(sale);
   }
 
+  deleteSalesReturn(salesReturn: SalesReturn): void {
+    if (
+      this.loadingReturns() ||
+      this.saving() ||
+      this.deletingReturnId() !== null
+    ) {
+      return;
+    }
+
+    this.notification.confirmation(
+      `Are you sure you want to delete sales return ${salesReturn.salesReturnNumber}?`,
+      () => this.confirmDeleteSalesReturn(salesReturn),
+      'Delete sales return',
+      undefined,
+      'This action cannot be undone and may affect the related sale and inventory.',
+      'Delete',
+    );
+  }
+
   saveReturn(): void {
     const sale = this.sale();
-    if (!sale || this.returnsLoadError() || this.loadingReturns()) return;
+    if (
+      !sale ||
+      this.returnsLoadError() ||
+      this.loadingReturns() ||
+      this.deletingReturnId() !== null
+    ) {
+      return;
+    }
 
     if (this.form.controls.salesReturnNumber.invalid || this.form.controls.returnDate.invalid) {
       this.form.controls.salesReturnNumber.markAsTouched();
@@ -264,6 +295,32 @@ export class SalesReturnsComponent implements OnInit {
         this.returnsLoadError.set(true);
         this.loadingReturns.set(false);
         this.notification.error('Failed to refresh return history for this invoice.');
+      },
+    });
+  }
+
+  private confirmDeleteSalesReturn(salesReturn: SalesReturn): void {
+    if (
+      this.loadingReturns() ||
+      this.saving() ||
+      this.deletingReturnId() !== null
+    ) {
+      return;
+    }
+
+    this.deletingReturnId.set(salesReturn._id);
+    this.salesReturnService.delete(salesReturn._id).subscribe({
+      next: () => {
+        this.notification.success('Sales return deleted successfully.');
+        this.deletingReturnId.set(null);
+        const sale = this.sale();
+        if (sale) {
+          this.loadReturns(sale);
+        }
+      },
+      error: () => {
+        this.notification.error('Failed to delete the sales return.');
+        this.deletingReturnId.set(null);
       },
     });
   }

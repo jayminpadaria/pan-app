@@ -9,6 +9,7 @@ import {
   SalesReturnItem,
 } from '../../../../shared/interfaces/sales-return.interface';
 import { NotificationService } from '../../../../shared/services/notification.service';
+import { SalesReturnService } from '../../../../shared/services/sales-return.service';
 import { SalesService } from '../../../../shared/services/sales.service';
 
 @Component({
@@ -21,12 +22,14 @@ export class SalesReturnViewComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly salesService = inject(SalesService);
+  private readonly salesReturnService = inject(SalesReturnService);
   private readonly notification = inject(NotificationService);
 
   readonly sale = signal<Sales | null>(null);
   readonly returns = signal<SalesReturn[]>([]);
   readonly loading = signal(false);
   readonly loadError = signal(false);
+  readonly deletingReturnId = signal<string | null>(null);
   private salesId: string | null = null;
 
   ngOnInit(): void {
@@ -53,6 +56,21 @@ export class SalesReturnViewComponent implements OnInit {
     this.loadReturns();
   }
 
+  deleteSalesReturn(salesReturn: SalesReturn): void {
+    if (this.loading() || this.deletingReturnId() !== null) {
+      return;
+    }
+
+    this.notification.confirmation(
+      `Are you sure you want to delete sales return ${salesReturn.salesReturnNumber}?`,
+      () => this.confirmDeleteSalesReturn(salesReturn),
+      'Delete sales return',
+      undefined,
+      'This action cannot be undone and may affect the related sale and inventory.',
+      'Delete',
+    );
+  }
+
   productName(salesReturnItem: SalesReturnItem): string {
     const saleItem = this.findSaleItem(salesReturnItem);
     return saleItem?.product?.name ?? saleItem?.productId ?? salesReturnItem.productVariantId;
@@ -71,6 +89,25 @@ export class SalesReturnViewComponent implements OnInit {
         saleItem.productVariantId === salesReturnItem.productVariantId &&
         saleItem.productStockId === salesReturnItem.productStockId,
     );
+  }
+
+  private confirmDeleteSalesReturn(salesReturn: SalesReturn): void {
+    if (this.loading() || this.deletingReturnId() !== null) {
+      return;
+    }
+
+    this.deletingReturnId.set(salesReturn._id);
+    this.salesReturnService.delete(salesReturn._id).subscribe({
+      next: () => {
+        this.notification.success('Sales return deleted successfully.');
+        this.deletingReturnId.set(null);
+        this.loadReturns();
+      },
+      error: () => {
+        this.notification.error('Failed to delete the sales return.');
+        this.deletingReturnId.set(null);
+      },
+    });
   }
 
   private loadReturns(): void {

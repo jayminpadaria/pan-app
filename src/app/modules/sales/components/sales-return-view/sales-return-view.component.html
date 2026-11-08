@@ -46,10 +46,6 @@
           <strong>{{ record.orderNumber }}</strong>
         </div>
         <div class="col-sm-6 col-lg-3">
-          <div class="text-muted small">Sales ID</div>
-          <strong>{{ record._id }}</strong>
-        </div>
-        <div class="col-sm-6 col-lg-3">
           <div class="text-muted small">Return bills</div>
           <strong>{{ returns().length }}</strong>
         </div>
@@ -71,12 +67,35 @@
               <h5 class="mb-1">{{ salesReturn.salesReturnNumber }}</h5>
               <span class="text-muted">{{ salesReturn.returnDate | date: 'mediumDate' }}</span>
             </div>
-            <div class="text-end">
-              <div class="text-muted small">Refunded to customer</div>
-              <strong>{{ salesReturn.totalRefundedToCustomer | number: '1.2-2' }}</strong>
-              <div class="text-muted small mt-1">
-                Refund method: {{ salesReturn.paymentMethod || 'Not recorded' }}
+            <div class="d-flex align-items-center gap-3">
+              <div class="text-end">
+                <div class="text-muted small">Refunded to customer</div>
+                <strong>{{ salesReturn.totalRefundedToCustomer | number: '1.2-2' }}</strong>
+                <div class="text-muted small mt-1">
+                  Refund method: {{ salesReturn.paymentMethod || 'Not recorded' }}
+                </div>
               </div>
+              <button
+                mat-stroked-button
+                color="warn"
+                type="button"
+                [disabled]="loading() || deletingReturnId() !== null"
+                (click)="deleteSalesReturn(salesReturn)"
+                [attr.aria-label]="'Delete sales return ' + salesReturn.salesReturnNumber"
+                [attr.title]="
+                  deletingReturnId() === salesReturn._id
+                    ? 'Deleting sales return...'
+                    : 'Delete sales return'
+                "
+              >
+                <i
+                  class="bi me-1"
+                  [class.bi-trash]="deletingReturnId() !== salesReturn._id"
+                  [class.bi-hourglass-split]="deletingReturnId() === salesReturn._id"
+                  aria-hidden="true"
+                ></i>
+                {{ deletingReturnId() === salesReturn._id ? 'Deleting...' : 'Delete' }}
+              </button>
             </div>
           </div>
 

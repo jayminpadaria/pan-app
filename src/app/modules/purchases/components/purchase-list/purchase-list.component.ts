@@ -43,7 +43,7 @@ export class PurchaseListComponent implements OnInit {
 
   readonly displayedColumns = [
     'invoiceNumber',
-    'sourceType',
+    // 'sourceType',
     'supplierName',
     'totalCostAmount',
     'status',

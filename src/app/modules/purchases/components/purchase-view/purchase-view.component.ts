@@ -15,6 +15,10 @@ import {
   ProductLabelDialogComponent,
   ProductLabelInput,
 } from '../../../products/components/product-list/product-label-dialog.component';
+import {
+  PurchaseItemEditDialogComponent,
+  PurchaseItemEditInput,
+} from './purchase-item-edit-dialog.component';
 
 @Component({
   selector: 'app-purchase-view',
@@ -37,6 +41,7 @@ export class PurchaseViewComponent implements OnInit {
   readonly supplier = signal<Supplier | null>(null);
   readonly loading = signal(false);
   readonly printingVariantId = signal<string | null>(null);
+  readonly editingItemId = signal<string | null>(null);
   private productLookupErrorNotified = false;
 
   ngOnInit() {
@@ -100,8 +105,55 @@ export class PurchaseViewComponent implements OnInit {
     return item.quantity * item.costPrice;
   }
 
+  editItem(item: PurchaseItem): void {
+    const purchase = this.purchase();
+    if (!purchase || !item.isEdit || !item._id || this.editingItemId() !== null) {
+      return;
+    }
+
+    this.editingItemId.set(item._id);
+    this.dialog
+      .open(PurchaseItemEditDialogComponent, {
+        width: '520px',
+        maxWidth: '95vw',
+        data: {
+          item,
+          productName: this.productName(item),
+          variantLabel: this.variantLabel(item),
+        },
+      })
+      .afterClosed()
+      .subscribe((changes?: PurchaseItemEditInput) => {
+        if (!changes) {
+          this.editingItemId.set(null);
+          return;
+        }
+
+        this.purchasesService
+          .updateItem(purchase._id, item._id!, {
+            productId: item.productId,
+            productVariantId: item.productVariantId,
+            quantity: changes.quantity,
+            costPrice: changes.costPrice,
+            retailPrice: changes.retailPrice,
+            expiryDate: changes.expiryDate,
+            _id: item._id!,
+          })
+          .subscribe({
+            next: () => {
+              this.notification.success('Purchase item updated successfully.');
+              this.refreshPurchase(purchase._id);
+            },
+            error: () => {
+              this.notification.error('Failed to update purchase item.');
+              this.editingItemId.set(null);
+            },
+          });
+      });
+  }
+
   printItemLabel(purchase: Purchase, item: PurchaseItem) {
-    if (this.printingVariantId() !== null) {
+    if (this.printingVariantId() !== null || this.editingItemId() !== null) {
       return;
     }
 
@@ -150,6 +202,30 @@ export class PurchaseViewComponent implements OnInit {
 
   isCompleted() {
     return this.purchase()?.status.trim().toUpperCase() === 'COMPLETED';
+  }
+
+  private refreshPurchase(purchaseId: string): void {
+    this.loading.set(true);
+    this.purchasesService.getById(purchaseId).subscribe({
+      next: (response) => {
+        if (!response.result) {
+          this.notification.error('Item updated, but the refreshed purchase was not returned.');
+          this.loading.set(false);
+          this.editingItemId.set(null);
+          return;
+        }
+
+        this.purchase.set(response.result);
+        this.loadRelatedRecords(response.result);
+        this.loading.set(false);
+        this.editingItemId.set(null);
+      },
+      error: () => {
+        this.notification.error('Item updated, but failed to refresh purchase details.');
+        this.loading.set(false);
+        this.editingItemId.set(null);
+      },
+    });
   }
 
   private dateInput(value: Date | null | undefined): string {

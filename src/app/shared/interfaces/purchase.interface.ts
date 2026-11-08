@@ -23,4 +23,15 @@ export interface PurchaseItem {
   costPrice: number; // Total cost to produce or buy 1 unit
   retailPrice: number; // Intended base selling price
   expiryDate?: Date | null;
+  isEdit?: boolean;
+}
+
+export interface PurchaseItemUpdate {
+  productId: string;
+  productVariantId: string;
+  quantity: number;
+  costPrice: number;
+  retailPrice: number;
+  expiryDate: string | null;
+  _id: string;
 }

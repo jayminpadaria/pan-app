@@ -22,4 +22,8 @@ export class SalesReturnService {
   create(sale: Omit<SalesReturn, '_id'>) {
     return this.http.post<ApiResponseFormat & { result?: SalesReturn }>(API_URL, sale);
   }
+
+  delete(id: string) {
+    return this.http.delete<ApiResponseFormat>(`${API_URL}/${id}`);
+  }
 }

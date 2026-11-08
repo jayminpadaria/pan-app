@@ -71,11 +71,34 @@
                 <td>{{ item.retailPrice | number: '1.2-2' }}</td>
                 <td>{{ item.expiryDate ? (item.expiryDate | date: 'mediumDate') : '—' }}</td>
                 <td class="fw-semibold">{{ lineTotal(item) | number: '1.2-2' }}</td>
-                <td>
+                <td class="text-nowrap">
+                  @if (item.isEdit && isCompleted()) {
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [disabled]="!item._id || loading() || editingItemId() !== null"
+                      (click)="editItem(item)"
+                      [attr.aria-label]="'Edit purchase item ' + productName(item)"
+                      [attr.title]="
+                        editingItemId() === item._id
+                          ? 'Editing purchase item...'
+                          : !item._id
+                            ? 'Cannot edit item without an ID'
+                            : 'Edit purchase item'
+                      "
+                    >
+                      <i
+                        class="bi"
+                        [class.bi-pencil]="editingItemId() !== item._id"
+                        [class.bi-hourglass-split]="editingItemId() === item._id"
+                        aria-hidden="true"
+                      ></i>
+                    </button>
+                  }
                   <button
                     mat-icon-button
                     type="button"
-                    [disabled]="printingVariantId() !== null"
+                    [disabled]="printingVariantId() !== null || editingItemId() !== null"
                     (click)="printItemLabel(record, item)"
                     [attr.aria-label]="'Print barcode labels for ' + productName(item)"
                     [attr.title]="

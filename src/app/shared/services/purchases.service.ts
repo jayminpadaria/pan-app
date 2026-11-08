@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { ApiListResponseFormat, ApiResponseFormat } from '../interfaces/api-response.interface';
 import { ListRequest } from '../interfaces/list.interface';
-import { Purchase } from '../interfaces/purchase.interface';
+import { Purchase, PurchaseItemUpdate } from '../interfaces/purchase.interface';
 
 const API_URL = `${environment.apiUrl}/purchases`;
 
@@ -25,6 +25,13 @@ export class PurchasesService {
 
   update(id: string, purchase: Omit<Purchase, '_id'>) {
     return this.http.put<ApiResponseFormat>(`${API_URL}/update/${id}`, purchase);
+  }
+
+  updateItem(purchaseId: string, itemId: string, item: PurchaseItemUpdate) {
+    return this.http.put<ApiResponseFormat>(
+      `${API_URL}/update/${purchaseId}/items/${itemId}`,
+      item,
+    );
   }
 
   updateStatus(id: string, status: string) {
