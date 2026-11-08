@@ -81,8 +81,16 @@ export class SalesViewComponent implements OnInit {
       : item.productVariantId;
   }
 
-  lineTotal(item: SalesItem) {
-    return Math.max(0, item.quantity * item.soldPrice - item.discountAmount);
+  lineAmount(item: SalesItem) {
+    return item.quantity * item.soldPrice;
+  }
+
+  grossSubtotal(sale: Sales) {
+    return sale.items.reduce((total, item) => total + this.lineAmount(item), 0);
+  }
+
+  discountAmount(sale: Sales) {
+    return sale.items.reduce((total, item) => total + item.discountAmount, 0);
   }
 
   returnedAmount(sale: Sales): number {
@@ -113,5 +121,4 @@ export class SalesViewComponent implements OnInit {
       },
     });
   }
-
 }

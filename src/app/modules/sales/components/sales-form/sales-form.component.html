@@ -177,8 +177,7 @@
                   <th scope="col">Available</th>
                   <th scope="col">Qty</th>
                   <th scope="col">Price</th>
-                  <th scope="col">Discount</th>
-                  <th scope="col">Line total</th>
+                  <th scope="col">Line amount</th>
                   <th scope="col">Action</th>
                 </tr>
               </thead>
@@ -188,7 +187,7 @@
                     <td class="fw-semibold">{{ item.controls.productName.value }}</td>
                     <td>{{ item.controls.availableQty.value }}</td>
                     <td class="quantity-cell">
-                      @if (isInlineEditing(item, 'quantity')) {
+                      @if (isInlineEditing(item)) {
                         <div class="inline-edit">
                           <input
                             #quantityInput
@@ -199,6 +198,7 @@
                             formControlName="quantity"
                             [class.is-invalid]="itemInvalid(item, 'quantity')"
                             [attr.aria-label]="'Quantity for ' + item.controls.productName.value"
+                            (input)="onDiscountPercentageInput()"
                           />
                           <button
                             mat-icon-button
@@ -208,7 +208,7 @@
                               'Save quantity for ' + item.controls.productName.value
                             "
                             title="Save quantity"
-                            (click)="saveInlineField(item, 'quantity')"
+                            (click)="saveInlineField(item)"
                           >
                             <i class="bi bi-check-lg" aria-hidden="true"></i>
                           </button>
@@ -227,7 +227,7 @@
                               'Edit quantity for ' + item.controls.productName.value
                             "
                             title="Edit quantity"
-                            (click)="editInlineField(item, 'quantity')"
+                            (click)="editInlineField(item)"
                           >
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                           </button>
@@ -237,57 +237,9 @@
                     <td>
                       {{ item.controls.soldPrice.value }}
                     </td>
-                    <td class="discount-cell">
-                      @if (isInlineEditing(item, 'discountAmount')) {
-                        <div class="inline-edit">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            class="form-control price-cell"
-                            formControlName="discountAmount"
-                            [class.is-invalid]="
-                              itemInvalid(item, 'discountAmount') || discountInvalid(item)
-                            "
-                            [attr.aria-label]="
-                              'Line discount for ' + item.controls.productName.value
-                            "
-                          />
-                          <button
-                            mat-icon-button
-                            class="inline-action save-action"
-                            type="button"
-                            [attr.aria-label]="
-                              'Save discount for ' + item.controls.productName.value
-                            "
-                            title="Save discount"
-                            (click)="saveInlineField(item, 'discountAmount')"
-                          >
-                            <i class="bi bi-check-lg" aria-hidden="true"></i>
-                          </button>
-                        </div>
-                      } @else {
-                        <div class="inline-edit">
-                          <span>{{ item.controls.discountAmount.value | number: '1.2-2' }}</span>
-                          <button
-                            mat-icon-button
-                            class="inline-action edit-action"
-                            type="button"
-                            [attr.aria-label]="
-                              'Edit discount for ' + item.controls.productName.value
-                            "
-                            title="Edit discount"
-                            (click)="editInlineField(item, 'discountAmount')"
-                          >
-                            <i class="bi bi-pencil" aria-hidden="true"></i>
-                          </button>
-                        </div>
-                      }
-                      @if (discountInvalid(item)) {
-                        <small class="text-danger">Discount exceeds the line total.</small>
-                      }
+                    <td class="text-nowrap fw-semibold">
+                      {{ lineAmount(item) | number: '1.2-2' }}
                     </td>
-                    <td class="text-nowrap fw-semibold">{{ lineTotal(item) | number: '1.2-2' }}</td>
                     <td>
                       <button
                         mat-button
@@ -302,7 +254,7 @@
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="7" class="text-center text-muted p-4">
+                    <td colspan="6" class="text-center text-muted p-4">
                       No items yet. Scan a product barcode to get started.
                     </td>
                   </tr>
@@ -310,33 +262,67 @@
               </tbody>
             </table>
           </div>
-          @if (items.invalid && items.touched) {
-            <div class="text-danger small">Add at least one item before saving.</div>
+          @if (items.hasError('required')) {
+            <div class="text-danger small">At least one line item is required before saving.</div>
           }
         </div>
 
         <div class="row justify-content-end g-3 mt-2">
-          <div class="col-sm-6 col-lg-4">
-            <label for="taxAmount" class="form-label">Tax amount</label>
-            <input
-              id="taxAmount"
-              type="number"
-              min="0"
-              step="0.01"
-              class="form-control"
-              formControlName="taxAmount"
-              [class.is-invalid]="isInvalid('taxAmount')"
-            />
-            <div class="invalid-feedback">Tax must be zero or greater.</div>
-          </div>
+          <div class="col-sm-6 col-lg-4"></div>
           <div class="col-12 col-lg-4">
             <div class="total-card p-3 rounded-3">
               <div class="d-flex justify-content-between mb-2">
-                <span>Subtotal</span>
+                <span>Subtotal before discount</span>
+                <strong>{{ grossSubtotal() | number: '1.2-2' }}</strong>
+              </div>
+              <div class="mb-2">
+                <label for="discountPercent" class="form-label">Bill discount</label>
+                <div class="input-group">
+                  <input
+                    id="discountAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="form-control"
+                    formControlName="discountAmount"
+                    [class.is-invalid]="isInvalid('discountAmount') || discountAmountInvalid()"
+                    aria-label="Bill discount amount"
+                    (input)="onDiscountAmountInput()"
+                  />
+                  <input
+                    id="discountPercent"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="any"
+                    class="form-control"
+                    formControlName="discountPercent"
+                    [class.is-invalid]="isInvalid('discountPercent')"
+                    aria-label="Discount percentage for the total bill"
+                    (input)="onDiscountPercentageInput()"
+                  />
+                  <span class="input-group-text">%</span>
+                </div>
+                @if (isInvalid('discountAmount')) {
+                  <small class="text-danger">Enter a discount amount of zero or greater.</small>
+                }
+                @if (discountAmountInvalid()) {
+                  <small class="text-danger">Discount cannot exceed the bill subtotal.</small>
+                }
+                @if (isInvalid('discountPercent')) {
+                  <small class="text-danger">Enter a percentage from 0 to 100.</small>
+                }
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Subtotal after discount</span>
                 <strong>{{ subTotal() | number: '1.2-2' }}</strong>
               </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Tax</span>
+                <strong>{{ form.controls.taxAmount.value | number: '1.2-2' }}</strong>
+              </div>
               <div class="d-flex justify-content-between border-top pt-2 fs-5">
-                <span>Total</span>
+                <span>Grand total</span>
                 <strong>{{ grandTotal() | number: '1.2-2' }}</strong>
               </div>
             </div>
@@ -359,7 +345,7 @@
             mat-flat-button
             color="primary"
             type="submit"
-            [disabled]="saving() || scanning() || printing()"
+            [disabled]="saving() || scanning() || printing() || items.length === 0"
           >
             {{
               saving()

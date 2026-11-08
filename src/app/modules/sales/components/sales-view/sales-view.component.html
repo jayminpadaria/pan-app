@@ -114,8 +114,7 @@
               <th scope="col">Variant</th>
               <th scope="col">Quantity</th>
               <th scope="col">Sold price</th>
-              <th scope="col">Discount</th>
-              <th scope="col">Line total</th>
+              <th scope="col">Line amount</th>
             </tr>
           </thead>
           <tbody>
@@ -125,12 +124,11 @@
                 <td>{{ variantLabel(item) }}</td>
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.soldPrice | number: '1.2-2' }}</td>
-                <td>{{ item.discountAmount | number: '1.2-2' }}</td>
-                <td class="fw-semibold">{{ lineTotal(item) | number: '1.2-2' }}</td>
+                <td class="fw-semibold">{{ lineAmount(item) | number: '1.2-2' }}</td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="7" class="text-center text-muted p-4">No sale items.</td>
+                <td colspan="5" class="text-center text-muted p-4">No sale items.</td>
               </tr>
             }
           </tbody>
@@ -141,7 +139,15 @@
         <div class="col-sm-6 col-lg-4">
           <div class="total-card p-3 rounded-3">
             <div class="d-flex justify-content-between mb-2">
-              <span>Subtotal</span>
+              <span>Subtotal before discount</span>
+              <strong>{{ grossSubtotal(record) | number: '1.2-2' }}</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Bill discount</span>
+              <strong>{{ discountAmount(record) | number: '1.2-2' }}</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal after discount</span>
               <strong>{{ record.subTotal | number: '1.2-2' }}</strong>
             </div>
             <div class="d-flex justify-content-between mb-2">

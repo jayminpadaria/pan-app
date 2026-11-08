@@ -10,7 +10,7 @@ import {
   ViewChild,
   ViewChildren,
 } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -34,20 +34,12 @@ interface SalesItemControls {
   quantity: FormControl<number>;
   costPriceAtSale: FormControl<number>;
   soldPrice: FormControl<number>;
-  discountAmount: FormControl<number>;
 }
 
 const today = () => {
   const date = new Date();
   const pad = (value: number) => String(value).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-};
-
-const validLineDiscount: ValidatorFn = (control) => {
-  const quantity = Number(control.get('quantity')?.value);
-  const soldPrice = Number(control.get('soldPrice')?.value);
-  const discountAmount = Number(control.get('discountAmount')?.value);
-  return discountAmount <= quantity * soldPrice ? null : { discountExceedsLineTotal: true };
 };
 
 @Component({
@@ -84,7 +76,6 @@ export class SalesFormComponent implements OnInit {
   readonly customerSearch = new FormControl('', { nonNullable: true });
   readonly barcode = new FormControl('', { nonNullable: true });
   readonly editingQuantities = signal<ReadonlySet<FormGroup<SalesItemControls>>>(new Set());
-  readonly editingDiscounts = signal<ReadonlySet<FormGroup<SalesItemControls>>>(new Set());
   private saleId: string | null = null;
   private customersLoaded = false;
 
@@ -96,8 +87,10 @@ export class SalesFormComponent implements OnInit {
       Validators.required,
     ),
     paymentMethod: this.formBuilder.control<'CASH' | 'ONLINE'>('CASH', Validators.required),
+    discountAmount: [0, [Validators.required, Validators.min(0)]],
+    discountPercent: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     taxAmount: [0, [Validators.required, Validators.min(0)]],
-    items: this.formBuilder.array<FormGroup<SalesItemControls>>([], Validators.minLength(1)),
+    items: this.formBuilder.array<FormGroup<SalesItemControls>>([], Validators.required),
   });
 
   get items() {
@@ -186,9 +179,9 @@ export class SalesFormComponent implements OnInit {
 
   removeItem(index: number) {
     const item = this.items.at(index);
-    this.updateEditingItems('quantity', item, false);
-    this.updateEditingItems('discountAmount', item, false);
+    this.updateEditingItems(item, false);
     this.items.removeAt(index);
+    this.onDiscountPercentageInput();
   }
 
   filteredCustomers() {
@@ -258,42 +251,79 @@ export class SalesFormComponent implements OnInit {
     return control.invalid && (control.dirty || control.touched);
   }
 
-  discountInvalid(item: FormGroup<SalesItemControls>) {
-    return (
-      item.hasError('discountExceedsLineTotal') &&
-      (item.controls.discountAmount.dirty || item.controls.discountAmount.touched)
-    );
+  isInlineEditing(item: FormGroup<SalesItemControls>) {
+    return this.editingQuantities().has(item);
   }
 
-  isInlineEditing(item: FormGroup<SalesItemControls>, field: 'quantity' | 'discountAmount') {
-    return (field === 'quantity' ? this.editingQuantities() : this.editingDiscounts()).has(item);
+  editInlineField(item: FormGroup<SalesItemControls>) {
+    this.updateEditingItems(item, true);
   }
 
-  editInlineField(item: FormGroup<SalesItemControls>, field: 'quantity' | 'discountAmount') {
-    this.updateEditingItems(field, item, true);
-  }
-
-  saveInlineField(item: FormGroup<SalesItemControls>, field: 'quantity' | 'discountAmount') {
-    const control = item.controls[field];
+  saveInlineField(item: FormGroup<SalesItemControls>) {
+    const control = item.controls.quantity;
     control.markAsTouched();
-    if (
-      control.invalid ||
-      (field === 'discountAmount' && item.hasError('discountExceedsLineTotal'))
-    ) {
+    if (control.invalid) {
       return;
     }
 
     control.markAsPristine();
-    this.updateEditingItems(field, item, false);
+    this.updateEditingItems(item, false);
   }
 
-  private updateEditingItems(
-    field: 'quantity' | 'discountAmount',
-    item: FormGroup<SalesItemControls>,
-    editing: boolean,
-  ) {
-    const editingItems = field === 'quantity' ? this.editingQuantities : this.editingDiscounts;
-    editingItems.update((current) => {
+  private allocatedDiscountAmounts() {
+    const grossCents = this.items.controls.map((item) =>
+      Math.max(0, Math.round(item.controls.quantity.value * item.controls.soldPrice.value * 100)),
+    );
+    const totalGrossCents = grossCents.reduce((total, gross) => total + gross, 0);
+    const totalDiscountCents = Math.min(
+      totalGrossCents,
+      Math.round(this.discountAmount() * 100),
+    );
+    if (totalGrossCents === 0 || totalDiscountCents === 0) {
+      return grossCents.map(() => 0);
+    }
+
+    const allocations = grossCents.map((gross, index) => {
+      const exactCents = (totalDiscountCents * gross) / totalGrossCents;
+      const cents = Math.floor(exactCents);
+      return { index, cents, remainder: exactCents - cents };
+    });
+    const remainingCents =
+      totalDiscountCents - allocations.reduce((total, item) => total + item.cents, 0);
+    const byLargestRemainder = [...allocations].sort(
+      (left, right) => right.remainder - left.remainder,
+    );
+    for (let index = 0; index < remainingCents; index += 1) {
+      byLargestRemainder[index].cents += 1;
+    }
+
+    return allocations.map((allocation) => allocation.cents / 100);
+  }
+
+  onDiscountAmountInput() {
+    const amount = this.discountAmount();
+    const grossAmount = this.grossSubtotal();
+    if (!Number.isFinite(amount) || !Number.isFinite(grossAmount) || grossAmount <= 0) {
+      return;
+    }
+
+    this.form.controls.discountPercent.setValue((amount / grossAmount) * 100, {
+      emitEvent: false,
+    });
+  }
+
+  onDiscountPercentageInput() {
+    const percentage = this.form.controls.discountPercent.value;
+    if (!Number.isFinite(percentage) || percentage < 0 || percentage > 100) {
+      return;
+    }
+
+    const amount = Math.round(((this.grossSubtotal() * percentage) / 100) * 100) / 100;
+    this.form.controls.discountAmount.setValue(amount, { emitEvent: false });
+  }
+
+  private updateEditingItems(item: FormGroup<SalesItemControls>, editing: boolean) {
+    this.editingQuantities.update((current) => {
       const next = new Set(current);
       if (editing) {
         next.add(item);
@@ -304,37 +334,64 @@ export class SalesFormComponent implements OnInit {
     });
   }
 
-  lineTotal(item: FormGroup<SalesItemControls>) {
-    const controls = item.controls;
-    return Math.max(
+  private discountPercentage(items: SalesItem[]) {
+    const grossAmount = items.reduce((total, item) => total + item.quantity * item.soldPrice, 0);
+    const discountAmount = items.reduce((total, item) => total + item.discountAmount, 0);
+    return grossAmount > 0 ? (discountAmount / grossAmount) * 100 : 0;
+  }
+
+  grossSubtotal() {
+    return this.items.controls.reduce(
+      (total, item) => total + item.controls.quantity.value * item.controls.soldPrice.value,
       0,
-      controls.quantity.value * controls.soldPrice.value - controls.discountAmount.value,
     );
   }
 
+  discountAmount() {
+    const amount = this.form.controls.discountAmount.value;
+    return Number.isFinite(amount) ? amount : 0;
+  }
+
+  lineAmount(item: FormGroup<SalesItemControls>) {
+    return item.controls.quantity.value * item.controls.soldPrice.value;
+  }
+
   subTotal() {
-    return this.items.controls.reduce((total, item) => total + this.lineTotal(item), 0);
+    return Math.max(0, this.grossSubtotal() - this.discountAmount());
   }
 
   grandTotal() {
     return this.subTotal() + this.form.controls.taxAmount.value;
   }
-  isInvalid(name: 'salesDate' | 'paymentStatus' | 'taxAmount') {
+  discountAmountInvalid() {
+    return this.discountAmount() > this.grossSubtotal();
+  }
+
+  isInvalid(
+    name: 'salesDate' | 'paymentStatus' | 'taxAmount' | 'discountPercent' | 'discountAmount',
+  ) {
     const control = this.form.controls[name];
     return control.invalid && (control.dirty || control.touched);
   }
 
   saveSale() {
-    if (this.form.invalid || this.scanning() || this.loadingItemDetails()) {
+    if (
+      this.items.length === 0 ||
+      this.form.invalid ||
+      this.discountAmountInvalid() ||
+      this.scanning() ||
+      this.loadingItemDetails()
+    ) {
       this.form.markAllAsTouched();
       return;
     }
 
     const value = this.form.getRawValue();
     const currentUtcTime = new Date().toISOString().slice(11);
+    const discountAmounts = this.allocatedDiscountAmounts();
     const sale: Omit<Sales, '_id'> = {
       customerId: value.customerId || null,
-      items: value.items.map((item): SalesItem => ({
+      items: value.items.map((item, index): SalesItem => ({
         ...(item._id ? { _id: item._id } : {}),
         productId: item.productId,
         productVariantId: item.productVariantId,
@@ -342,7 +399,7 @@ export class SalesFormComponent implements OnInit {
         quantity: item.quantity,
         costPriceAtSale: item.costPriceAtSale,
         soldPrice: item.soldPrice,
-        discountAmount: item.discountAmount,
+        discountAmount: discountAmounts[index],
       })),
       subTotal: this.subTotal(),
       taxAmount: value.taxAmount,
@@ -461,6 +518,8 @@ export class SalesFormComponent implements OnInit {
         salesDate: this.dateInput(sale.salesDate),
         paymentStatus: sale.paymentStatus,
         paymentMethod: sale.paymentMethod ?? 'CASH',
+        discountAmount: sale.items.reduce((total, item) => total + item.discountAmount, 0),
+        discountPercent: this.discountPercentage(sale.items),
         taxAmount: sale.taxAmount,
       },
       { emitEvent: false },
@@ -495,11 +554,10 @@ export class SalesFormComponent implements OnInit {
         ],
         costPriceAtSale: [saleItem.costPriceAtSale],
         soldPrice: [saleItem.soldPrice, [Validators.required, Validators.min(0)]],
-        discountAmount: [saleItem.discountAmount, [Validators.required, Validators.min(0)]],
       },
-      { validators: validLineDiscount },
     );
     this.items.push(item);
+    this.onDiscountPercentageInput();
   }
 
   private addStockedVariant(lookup: StockLookupResponse) {
@@ -527,6 +585,7 @@ export class SalesFormComponent implements OnInit {
       const nextQuantity = existingItem.controls.quantity.value + 1;
       existingItem.controls.quantity.setValue(nextQuantity);
       existingItem.controls.quantity.markAsDirty();
+      this.onDiscountPercentageInput();
       // this.focusQuantityInput(this.items.controls.indexOf(existingItem));
       return;
     }
@@ -543,9 +602,7 @@ export class SalesFormComponent implements OnInit {
         quantity: [1, [Validators.required, Validators.min(1), Validators.max(batch.availableQty)]],
         costPriceAtSale: [batch.costPrice],
         soldPrice: [batch.retailPrice, [Validators.required, Validators.min(0)]],
-        discountAmount: [0, [Validators.required, Validators.min(0)]],
       },
-      { validators: validLineDiscount },
     );
     this.items.push(item);
     // this.focusQuantityInput(this.items.length - 1);
