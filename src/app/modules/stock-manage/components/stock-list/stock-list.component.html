@@ -1,0 +1,170 @@
+<section class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-3">
+    <div>
+      <h4 class="mb-0">Stock management</h4>
+      <small class="text-muted">{{ total() | number }} stock batches</small>
+    </div>
+    <button mat-stroked-button type="button" [disabled]="loading()" (click)="load()">
+      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>
+      Refresh
+    </button>
+  </div>
+
+  <div class="card-body border-bottom">
+    <div class="stock-totals" aria-label="Stock totals">
+      <div>
+        <span>Available</span>
+        <strong>{{ totals().availableQty | number }}</strong>
+      </div>
+      <div>
+        <span>On hand</span>
+        <strong>{{ totals().onHandQty | number }}</strong>
+      </div>
+      <div>
+        <span>Damaged</span>
+        <strong>{{ totals().damagedQty | number }}</strong>
+      </div>
+      <div>
+        <span>Expired</span>
+        <strong>{{ totals().expiredQty | number }}</strong>
+      </div>
+      <div>
+        <span>Obsolete</span>
+        <strong>{{ totals().obsoleteQty | number }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-body border-bottom d-flex align-items-center gap-3">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search flex-grow-1">
+      <mat-label>Search stock</mat-label>
+      <input matInput [formControl]="search" placeholder="Product, variant, SKU or barcode" />
+    </mat-form-field>
+    <button
+      mat-stroked-button
+      type="button"
+      class="flex-shrink-0"
+      [disabled]="!hasSearch"
+      (click)="clearSearch()"
+    >
+      Clear
+    </button>
+  </div>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="table-responsive">
+    <table mat-table matSort [dataSource]="dataSource" class="w-100">
+      <ng-container matColumnDef="productName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Product</th>
+        <td mat-cell *matCellDef="let stock" class="fw-semibold">{{ stock.productName }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="variantName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Variant</th>
+        <td mat-cell *matCellDef="let stock">{{ stock.variantName }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="sku">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>SKU</th>
+        <td mat-cell *matCellDef="let stock">
+          <div>{{ stock.sku }}</div>
+          <small class="text-muted">{{ stock.barcode }}</small>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="availableQty">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Available</th>
+        <td mat-cell *matCellDef="let stock">{{ stock.availableQty | number }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="onHandQty">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>On hand</th>
+        <td mat-cell *matCellDef="let stock">{{ stock.onHandQty | number }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="damagedQty">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Damaged</th>
+        <td mat-cell *matCellDef="let stock">{{ stock.damagedQty | number }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="expiredQty">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Expired</th>
+        <td mat-cell *matCellDef="let stock">{{ stock.expiredQty | number }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="obsoleteQty">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Obsolete</th>
+        <td mat-cell *matCellDef="let stock">{{ stock.obsoleteQty | number }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="costPrice">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Cost</th>
+        <td mat-cell *matCellDef="let stock">{{ stock.costPrice | number: '1.2-2' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="retailPrice">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Retail</th>
+        <td mat-cell *matCellDef="let stock">{{ stock.retailPrice | number: '1.2-2' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="receivedAt">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Received</th>
+        <td mat-cell *matCellDef="let stock">{{ stock.receivedAt | date: 'mediumDate' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="expiryDate">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Expiry</th>
+        <td mat-cell *matCellDef="let stock">
+          {{ stock.expiryDate ? (stock.expiryDate | date: 'mediumDate') : '—' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let stock">
+          <button
+            mat-icon-button
+            type="button"
+            [disabled]="loading() || updatingStockId() !== null || stock.availableQty < 1"
+            (click)="updateCondition(stock)"
+            [attr.aria-label]="'Update condition for ' + stock.productName + ' ' + stock.variantName"
+            [attr.title]="
+              updatingStockId() === stock.stockId
+                ? 'Updating stock condition...'
+                : 'Mark stock expired or obsolete'
+            "
+          >
+            <i
+              class="bi"
+              [class.bi-box-seam]="updatingStockId() !== stock.stockId"
+              [class.bi-hourglass-split]="updatingStockId() === stock.stockId"
+              aria-hidden="true"
+            ></i>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      <tr class="mat-row">
+        <td
+          class="mat-cell text-center text-muted p-4"
+          [attr.colspan]="displayedColumns.length"
+          *matNoDataRow
+        >
+          No stock found.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <mat-paginator
+    [length]="dataSource.filteredData.length"
+    [pageSize]="10"
+    [pageSizeOptions]="[5, 10, 25, 50]"
+    showFirstLastButtons
+  />
+</section>

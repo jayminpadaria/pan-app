@@ -32,6 +32,6 @@ export interface PurchaseItemUpdate {
   quantity: number;
   costPrice: number;
   retailPrice: number;
-  expiryDate: string | null;
+  expiryDate: string;
   _id: string;
 }

@@ -74,6 +74,11 @@ const routes: Routes = [
         loadChildren: () =>
           import('./modules/customers/customers.module').then((m) => m.CustomersModule),
       },
+      {
+        path: 'stock-manage',
+        loadChildren: () =>
+          import('./modules/stock-manage/stock-manage.module').then((m) => m.StockManageModule),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -1,0 +1,28 @@
+:host {
+  display: block;
+}
+
+th.mat-mdc-header-cell {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.search {
+  min-width: 220px;
+}
+
+.stock-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.stock-totals div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.stock-totals span {
+  color: #6c757d;
+  font-size: 0.875rem;
+}

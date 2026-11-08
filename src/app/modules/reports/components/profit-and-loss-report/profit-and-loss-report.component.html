@@ -92,6 +92,11 @@
             Cost of goods {{ data.summary.costOfGoodsSold | number: '1.2-2' }} ·
             Returned goods {{ data.summary.returnedGoodsCost | number: '1.2-2' }}
           </p>
+          <p class="financial-detail">
+            Expired write-off {{ data.summary.expiredStockWriteOff | number: '1.2-2' }} ·
+            Obsolete write-off {{ data.summary.obsoleteStockWriteOff | number: '1.2-2' }} ·
+            Stock write-offs {{ data.summary.stockWriteOffs | number: '1.2-2' }}
+          </p>
         </div>
       </article>
 
@@ -138,6 +143,9 @@
               <th scope="col" class="text-end">Total income</th>
               <th scope="col" class="text-end">Cost of goods</th>
               <th scope="col" class="text-end">Returned goods cost</th>
+              <th scope="col" class="text-end">Expired stock write-off</th>
+              <th scope="col" class="text-end">Obsolete stock write-off</th>
+              <th scope="col" class="text-end">Stock write-offs</th>
               <th scope="col" class="text-end">Total expenses</th>
               <th scope="col" class="text-end">Net profit / loss</th>
               <th scope="col">Result</th>
@@ -152,6 +160,9 @@
                 <td class="text-end">{{ entry.totalIncome | number: '1.2-2' }}</td>
                 <td class="text-end">{{ entry.costOfGoodsSold | number: '1.2-2' }}</td>
                 <td class="text-end">{{ entry.returnedGoodsCost | number: '1.2-2' }}</td>
+                <td class="text-end">{{ entry.expiredStockWriteOff | number: '1.2-2' }}</td>
+                <td class="text-end">{{ entry.obsoleteStockWriteOff | number: '1.2-2' }}</td>
+                <td class="text-end">{{ entry.stockWriteOffs | number: '1.2-2' }}</td>
                 <td class="text-end">{{ entry.totalExpenses | number: '1.2-2' }}</td>
                 <td class="text-end fw-semibold">
                   {{ entry.netProfitLoss | number: '1.2-2' }}
@@ -168,7 +179,9 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="9" class="empty-state">No financial activity found for this period.</td>
+                <td colspan="12" class="empty-state">
+                  No financial activity found for this period.
+                </td>
               </tr>
             }
           </tbody>
@@ -180,6 +193,9 @@
               <th class="text-end">{{ data.summary.totalIncome | number: '1.2-2' }}</th>
               <th class="text-end">{{ data.summary.costOfGoodsSold | number: '1.2-2' }}</th>
               <th class="text-end">{{ data.summary.returnedGoodsCost | number: '1.2-2' }}</th>
+              <th class="text-end">{{ data.summary.expiredStockWriteOff | number: '1.2-2' }}</th>
+              <th class="text-end">{{ data.summary.obsoleteStockWriteOff | number: '1.2-2' }}</th>
+              <th class="text-end">{{ data.summary.stockWriteOffs | number: '1.2-2' }}</th>
               <th class="text-end">{{ data.summary.totalExpenses | number: '1.2-2' }}</th>
               <th class="text-end">{{ data.summary.netProfitLoss | number: '1.2-2' }}</th>
               <th>

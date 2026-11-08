@@ -226,7 +226,10 @@ export class PurchaseFormComponent implements OnInit {
         quantity: [item?.quantity ?? 1, [Validators.required, Validators.min(1)]],
         costPrice: [item?.costPrice ?? 0, [Validators.required, Validators.min(0)]],
         retailPrice: [item?.retailPrice ?? 0, [Validators.required, Validators.min(0)]],
-        expiryDate: [this.dateInput(item?.expiryDate) || sixMonthsFromToday()],
+        expiryDate: [
+          this.dateInput(item?.expiryDate) || sixMonthsFromToday(),
+          Validators.required,
+        ],
       },
       { validators: retailPriceGreaterThanCost },
     );
@@ -352,7 +355,7 @@ export class PurchaseFormComponent implements OnInit {
         quantity: item.quantity,
         costPrice: item.costPrice,
         retailPrice: item.retailPrice,
-        expiryDate: new Date(`${item.expiryDate || sixMonthsFromToday()}T00:00:00.000Z`),
+        expiryDate: new Date(`${item.expiryDate}T00:00:00.000Z`),
       })),
     };
     const request =

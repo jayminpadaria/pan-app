@@ -61,7 +61,9 @@
         type="date"
         class="form-control"
         formControlName="expiryDate"
+        [class.is-invalid]="isInvalid('expiryDate')"
       />
+      <div class="invalid-feedback">Expiry date is required.</div>
     </div>
   </div>
 

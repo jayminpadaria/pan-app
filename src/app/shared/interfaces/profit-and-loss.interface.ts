@@ -6,6 +6,9 @@ export interface ProfitAndLossSummary {
   totalIncome: number;
   costOfGoodsSold: number;
   returnedGoodsCost: number;
+  expiredStockWriteOff: number;
+  obsoleteStockWriteOff: number;
+  stockWriteOffs: number;
   totalExpenses: number;
   netProfitLoss: number;
   financialResult: string;
@@ -18,6 +21,9 @@ export interface ProfitAndLossEntry {
   totalIncome: number;
   costOfGoodsSold: number;
   returnedGoodsCost: number;
+  expiredStockWriteOff: number;
+  obsoleteStockWriteOff: number;
+  stockWriteOffs: number;
   totalExpenses: number;
   netProfitLoss: number;
   financialResult: string;

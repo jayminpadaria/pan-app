@@ -204,7 +204,9 @@
                         class="form-control"
                         aria-label="Expiry date"
                         formControlName="expiryDate"
+                        [class.is-invalid]="itemInvalid(item, 'expiryDate')"
                       />
+                      <div class="invalid-feedback">Expiry date is required.</div>
                     </td>
                     <td class="text-nowrap">{{ lineTotal(item) | number: '1.2-2' }}</td>
                     <td>

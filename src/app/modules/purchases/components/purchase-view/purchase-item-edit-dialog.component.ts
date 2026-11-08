@@ -14,7 +14,7 @@ export interface PurchaseItemEditInput {
   quantity: number;
   costPrice: number;
   retailPrice: number;
-  expiryDate: string | null;
+  expiryDate: string;
 }
 
 const retailPriceGreaterThanCost: ValidatorFn = (control) => {
@@ -64,7 +64,7 @@ export class PurchaseItemEditDialogComponent {
         this.data.item.retailPrice,
         [Validators.required, Validators.min(0)],
       ],
-      expiryDate: [dateInput(this.data.item.expiryDate)],
+      expiryDate: [dateInput(this.data.item.expiryDate), Validators.required],
     },
     { validators: retailPriceGreaterThanCost },
   );
@@ -95,9 +95,7 @@ export class PurchaseItemEditDialogComponent {
       quantity: value.quantity,
       costPrice: value.costPrice,
       retailPrice: value.retailPrice,
-      expiryDate: value.expiryDate
-        ? new Date(`${value.expiryDate}T00:00:00.000Z`).toISOString()
-        : null,
+      expiryDate: new Date(`${value.expiryDate}T00:00:00.000Z`).toISOString(),
     } satisfies PurchaseItemEditInput);
   }
 }

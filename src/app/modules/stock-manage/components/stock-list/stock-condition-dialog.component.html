@@ -1,0 +1,46 @@
+<h2 mat-dialog-title>Update stock condition</h2>
+<form [formGroup]="form" (ngSubmit)="save()">
+  <div mat-dialog-content class="row g-3">
+    <div class="col-12">
+      <div class="fw-semibold">{{ data.productName }}</div>
+      <small class="text-muted">{{ data.variantName }}</small>
+      <div class="small text-muted mt-1">Available quantity: {{ data.availableQty }}</div>
+    </div>
+
+    <div class="col-12">
+      <label for="stock-condition" class="form-label">Condition</label>
+      <select
+        id="stock-condition"
+        class="form-select"
+        formControlName="condition"
+        [class.is-invalid]="isInvalid('condition')"
+      >
+        <option value="EXPIRED">Expired</option>
+        <option value="OBSOLETE">Obsolete / sample</option>
+      </select>
+      <div class="invalid-feedback">Select a stock condition.</div>
+    </div>
+
+    <div class="col-12">
+      <label for="stock-condition-quantity" class="form-label">Quantity</label>
+      <input
+        id="stock-condition-quantity"
+        type="number"
+        min="1"
+        [max]="data.availableQty"
+        step="1"
+        class="form-control"
+        formControlName="quantity"
+        [class.is-invalid]="isInvalid('quantity')"
+      />
+      <div class="invalid-feedback">
+        Enter a whole number between 1 and {{ data.availableQty }}.
+      </div>
+    </div>
+  </div>
+
+  <div mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-flat-button color="primary" type="submit">Update stock</button>
+  </div>
+</form>

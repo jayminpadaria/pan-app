@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { ApiListResponseFormat, ApiResponseFormat } from '../interfaces/api-response.interface';
 import { ListRequest } from '../interfaces/list.interface';
+import { ProductStockListResult } from '../interfaces/product-stock.interface';
 import {
   Product,
   ProductInput,
@@ -22,6 +23,23 @@ export class ProductsService {
 
   getAllWithRate(request: ListRequest) {
     return this.http.post<ApiListResponseFormat<Product>>(`${API_URL}/list-with-rate`, request);
+  }
+
+  getStockList() {
+    return this.http.get<ApiResponseFormat & { result?: ProductStockListResult }>(
+      `${API_URL}/stock-list`,
+    );
+  }
+
+  updateStockCondition(
+    stockId: string,
+    condition: 'EXPIRED' | 'OBSOLETE',
+    quantity: number,
+  ) {
+    return this.http.patch<ApiResponseFormat>(
+      `${API_URL}/stock/${encodeURIComponent(stockId)}/condition`,
+      { condition, quantity },
+    );
   }
 
   getById(id: string) {

@@ -17,6 +17,42 @@ export interface ProductStock {
   isDeleted: boolean;
 }
 
+export interface ProductStockListItem {
+  stockId: string;
+  productId: string;
+  productName: string;
+  variantId: string;
+  variantName: string;
+  sku: string;
+  barcode: string;
+  purchaseId: string;
+  purchaseItemId: string;
+  receivedQty: number;
+  availableQty: number;
+  damagedQty: number;
+  expiredQty: number;
+  obsoleteQty: number;
+  onHandQty: number;
+  costPrice: number;
+  retailPrice: number;
+  receivedAt: Date;
+  expiryDate: Date | null;
+}
+
+export interface ProductStockListTotals {
+  availableQty: number;
+  damagedQty: number;
+  expiredQty: number;
+  obsoleteQty: number;
+  onHandQty: number;
+}
+
+export interface ProductStockListResult {
+  totalDocument: number;
+  totals: ProductStockListTotals;
+  documentItems: ProductStockListItem[];
+}
+
 export interface StockLookupResponse {
   product: Pick<Product, '_id' | 'name' | 'brand' | 'categories'>;
   variant: ProductVariant & {

@@ -29,6 +29,13 @@ export const allMenu: readonly AppMenuItem[] = [
     roles: ['admin', 'manager'],
   },
   {
+    label: 'Stock Management',
+    link: '/app/stock-manage',
+    icon: 'bi-boxes',
+    isEnabled: true,
+    roles: ['admin', 'manager'],
+  },
+  {
     label: 'Bill of Materials',
     link: '/app/bill-of-materials',
     icon: 'bi-list-check',
